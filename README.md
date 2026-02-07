@@ -117,6 +117,11 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+### 3. 初始化数据
+```bash
+docker compose exec backend python scripts/seed.py --reset
+```
+
 启动后访问 `http://<服务器IP>` 即可使用。
 
 ### 架构示意
