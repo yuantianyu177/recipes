@@ -54,78 +54,72 @@ recipes/
 └── .gitignore
 ```
 
-## 快速开始
+## 开发
 
-### 一键搭建开发环境
+所有依赖服务（PostgreSQL、MeiliSearch）和代码（后端、前端）均预设了相同的默认配置，开发环境零配置即可运行。
+
+### 一键启动
 
 ```bash
-# 自动安装依赖、启动数据库容器、配置环境
 bash setup.sh
 ```
 
-脚本会自动检测并安装 Node.js、Python 3.11+、Docker，启动 PostgreSQL 和 MeiliSearch 容器，安装前后端依赖。
-
-### 手动搭建
-
-**1. 启动依赖服务**
+脚本会自动检测并安装 Node.js、Python 3.11+、Docker，启动数据库容器，安装前后端依赖。完成后按提示分别启动前后端即可。
 
 ```bash
-cp .env.example .env
-# 按需修改 .env 中的数据库密码、密钥等
-
-docker compose -f docker-compose.dev.yml up -d
-```
-
-**2. 启动后端**
-
-```bash
+# 启动后端
 cd backend
-python -m venv venv
-source venv/bin/activate
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-```
+# 运行在 http://localhost:8000，API 文档：http://localhost:8000/docs
 
-后端运行在 `http://localhost:8000`，API 文档：`http://localhost:8000/docs`
-
-**3. 启动前端**
-
-```bash
+# 启动前端
 cd frontend
 npm install
 npm run dev
-```
+# 运行在 http://localhost:5173，自动代理 /api 和 /uploads 到后端
 
-前端运行在 `http://localhost:5173`，自动代理 API 请求到后端。
-
-**4. 导入示例数据（可选）**
-
-```bash
-cd backend
-source venv/bin/activate
+# 4. 导入示例数据（可选）
+cd backend && source venv/bin/activate
 python scripts/seed.py
 ```
 
-## 生产部署
+## 部署
 
-### Docker Compose 一键部署（推荐）
+### 1. 配置环境变量
 
 ```bash
-# 配置环境变量
 cp .env.example .env
-# 编辑 .env，务必修改以下配置：
-#   POSTGRES_PASSWORD  — 数据库密码
-#   SECRET_KEY         — JWT 密钥
-#   ADMIN_PASSWORD     — 管理后台密码
-#   MEILI_MASTER_KEY   — 搜索引擎密钥
+```
 
-# 构建并启动全部服务
+编辑 `.env`，**修改以下默认值**：
+
+| 变量 | 说明 | 默认值（不安全） |
+|------|------|-----------------|
+| `POSTGRES_PASSWORD` | 数据库密码 | `recipe_secret` |
+| `SECRET_KEY` | JWT 签名密钥 | `change-me-to-a-random-string` |
+| `ADMIN_PASSWORD` | 管理后台密码 | `admin123` |
+| `MEILI_MASTER_KEY` | 搜索引擎密钥 | `recipe_meili_master_key` |
+
+其他可选配置：
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `POSTGRES_USER` | 数据库用户名 | `recipe_user` |
+| `POSTGRES_DB` | 数据库名 | `recipe_db` |
+| `ADMIN_USERNAME` | 管理后台用户名 | `admin` |
+| `FRONTEND_PORT` | 外部访问端口 | `80` |
+
+### 2. 构建并启动
+
+```bash
 docker compose up -d --build
 ```
 
-启动后访问 `http://<服务器IP>` 即可使用（默认端口 80，可通过 `FRONTEND_PORT` 修改）。
+启动后访问 `http://<服务器IP>` 即可使用。
 
-**架构示意：**
+### 架构示意
 
 ```
 用户 → Nginx(:80) ─┬─ 静态文件 (Vue SPA)
@@ -136,21 +130,6 @@ docker compose up -d --build
                             ▼          ▼          ▼
                        PostgreSQL  MeiliSearch  uploads/
 ```
-
-### 环境变量说明
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `POSTGRES_USER` | 数据库用户名 | `recipe_user` |
-| `POSTGRES_PASSWORD` | 数据库密码 | `recipe_secret` |
-| `POSTGRES_DB` | 数据库名 | `recipe_db` |
-| `SECRET_KEY` | JWT 签名密钥 | `change-me-to-a-random-string` |
-| `ADMIN_USERNAME` | 管理后台用户名 | `admin` |
-| `ADMIN_PASSWORD` | 管理后台密码 | `admin123` |
-| `MEILI_MASTER_KEY` | MeiliSearch 密钥 | `recipe_meili_master_key` |
-| `FRONTEND_PORT` | 前端对外端口 | `80` |
-
-> 生产环境请务必修改所有默认密码和密钥。
 
 ## License
 
