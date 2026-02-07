@@ -1,0 +1,36 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+
+from app.api import auth, recipes, tags, ingredients, search, upload, import_export, share
+
+app = FastAPI(title="Recipe API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register routers
+app.include_router(auth.router)
+app.include_router(recipes.router)
+app.include_router(tags.router)
+app.include_router(ingredients.router)
+app.include_router(search.router)
+app.include_router(upload.router)
+app.include_router(import_export.router)
+app.include_router(share.router)
+
+# Serve uploaded files
+upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
+
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
