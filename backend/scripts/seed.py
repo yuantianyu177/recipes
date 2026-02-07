@@ -11,7 +11,6 @@ Usage (Docker production):
   docker compose exec backend python scripts/seed.py --reset
 """
 import asyncio
-import json
 import sys
 import os
 
@@ -503,23 +502,10 @@ async def seed_data():
         print(f"[WARN] Search index sync failed: {e}")
 
 
-def export_synonyms():
-    """Export synonym groups to a JSON file."""
-    output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "synonyms.json")
-    data = {}
-    for group in SYNONYM_GROUPS:
-        if len(group) >= 2:
-            data[group[0]] = group[1:]
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"[OK] Synonyms exported to {output_path} ({len(data)} groups)")
-
-
 async def main():
     if "--reset" in sys.argv:
         await reset_database()
     await seed_data()
-    export_synonyms()
     print("\nDone!")
 
 
