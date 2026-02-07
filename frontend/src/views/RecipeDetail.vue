@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRecipeStore } from '../stores/recipe'
 import ShareModal from '../components/ShareModal.vue'
+import RichContent from '../components/RichContent.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -176,9 +177,10 @@ function handleShare() {
     <!-- Description -->
     <div
       v-if="recipe.description"
-      class="text-gray-600 leading-relaxed prose mb-8 bg-white rounded-2xl p-6 border border-gray-100"
-      v-html="recipe.description"
-    />
+      class="text-gray-600 leading-relaxed mb-8 bg-white rounded-2xl p-6 border border-gray-100"
+    >
+      <RichContent :html="recipe.description" />
+    </div>
 
     <!-- Ingredients -->
     <div class="mb-8">
@@ -215,10 +217,9 @@ function handleShare() {
         <span class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-lg">📝</span>
         烹饪步骤
       </h2>
-      <div
-        class="bg-white rounded-2xl p-6 border border-gray-100 text-gray-700 leading-relaxed prose"
-        v-html="recipe.steps"
-      />
+      <div class="bg-white rounded-2xl p-6 border border-gray-100 text-gray-700 leading-relaxed">
+        <RichContent :html="recipe.steps" />
+      </div>
     </div>
 
     <!-- Tips -->

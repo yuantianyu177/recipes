@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRecipeStore } from '../stores/recipe'
 import RecipeCard from '../components/RecipeCard.vue'
 import ShareModal from '../components/ShareModal.vue'
@@ -22,13 +22,62 @@ function closeShareModal() {
 
 const keyword = ref('')
 const selectedTags = ref([])
-const filteredRecipes = ref([])
+const allFilteredRecipes = ref([])
 
 const tagsByCategory = computed(() => store.getTagsByCategory)
 
+// Infinite scroll
+const PAGE_SIZE = 12
+const displayCount = ref(PAGE_SIZE)
+const loadingMore = ref(false)
+const sentinelRef = ref(null)
+let observer = null
+
+const displayedRecipes = computed(() => allFilteredRecipes.value.slice(0, displayCount.value))
+const hasMore = computed(() => displayCount.value < allFilteredRecipes.value.length)
+
+function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  setTimeout(() => {
+    displayCount.value += PAGE_SIZE
+    loadingMore.value = false
+  }, 150)
+}
+
+function resetPagination() {
+  displayCount.value = PAGE_SIZE
+}
+
+// Setup IntersectionObserver for infinite scroll
+function setupObserver() {
+  if (observer) observer.disconnect()
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadMore()
+    },
+    { rootMargin: '200px' }
+  )
+  nextTick(() => {
+    if (sentinelRef.value) observer.observe(sentinelRef.value)
+  })
+}
+
 onMounted(async () => {
   await store.fetchAll()
-  filteredRecipes.value = store.recipes
+  allFilteredRecipes.value = store.recipes
+  setupObserver()
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+  window.removeEventListener('scroll', handleScroll)
+})
+
+// Watch sentinel ref changes (v-if toggle)
+watch(sentinelRef, (el) => {
+  if (observer && el) observer.observe(el)
 })
 
 // Debounced search
@@ -36,7 +85,8 @@ let searchTimer = null
 watch([keyword, selectedTags], () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(async () => {
-    filteredRecipes.value = await store.searchRecipes(keyword.value, selectedTags.value)
+    allFilteredRecipes.value = await store.searchRecipes(keyword.value, selectedTags.value)
+    resetPagination()
   }, 200)
 }, { deep: true })
 
@@ -55,6 +105,17 @@ function clearFilters() {
 }
 
 const hasActiveFilter = computed(() => keyword.value || selectedTags.value.length > 0)
+
+// Back to top
+const showBackToTop = ref(false)
+
+function handleScroll() {
+  showBackToTop.value = window.scrollY > 400
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <template>
@@ -143,20 +204,31 @@ const hasActiveFilter = computed(() => keyword.value || selectedTags.value.lengt
     <!-- Results count -->
     <div v-if="!store.loading" class="flex items-center justify-between mb-5">
       <p class="text-sm text-gray-400">
-        共 <span class="font-semibold text-gray-700">{{ filteredRecipes.length }}</span> 道菜谱
+        共 <span class="font-semibold text-gray-700">{{ allFilteredRecipes.length }}</span> 道菜谱
       </p>
     </div>
 
     <!-- Recipe Grid -->
     <div
-      v-if="filteredRecipes.length > 0"
+      v-if="displayedRecipes.length > 0"
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
     >
-      <RecipeCard v-for="recipe in filteredRecipes" :key="recipe.id" :recipe="recipe" @share="handleShare" />
+      <RecipeCard v-for="recipe in displayedRecipes" :key="recipe.id" :recipe="recipe" @share="handleShare" />
+    </div>
+
+    <!-- Load more sentinel -->
+    <div v-if="hasMore" ref="sentinelRef" class="flex items-center justify-center py-8">
+      <div class="w-6 h-6 border-3 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+      <span class="ml-2 text-sm text-gray-400">加载更多...</span>
+    </div>
+
+    <!-- All loaded hint -->
+    <div v-else-if="displayedRecipes.length > PAGE_SIZE" class="text-center py-6">
+      <span class="text-xs text-gray-300">— 已全部加载 —</span>
     </div>
 
     <!-- Empty state -->
-    <div v-else class="text-center py-24">
+    <div v-if="!store.loading && allFilteredRecipes.length === 0" class="text-center py-24">
       <div class="text-6xl mb-4">🍽️</div>
       <p class="text-lg text-gray-500 mb-2">没有找到菜谱</p>
       <p class="text-sm text-gray-400">试试其他关键词或标签</p>
@@ -171,5 +243,28 @@ const hasActiveFilter = computed(() => keyword.value || selectedTags.value.lengt
 
     <!-- Share Modal -->
     <ShareModal :show="showShareModal" :recipe="shareRecipe" @close="closeShareModal" />
+
+    <!-- Back to top button -->
+    <Teleport to="body">
+      <transition
+        enter-active-class="transition-all duration-300 ease-out"
+        leave-active-class="transition-all duration-200 ease-in"
+        enter-from-class="opacity-0 translate-y-4"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-4"
+      >
+        <button
+          v-if="showBackToTop"
+          class="fixed bottom-8 right-8 z-40 w-11 h-11 rounded-full bg-white shadow-lg shadow-gray-200/50 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-orange-500 hover:border-orange-300 hover:shadow-orange-100/50 transition-all"
+          title="回到顶部"
+          @click="scrollToTop"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      </transition>
+    </Teleport>
   </div>
 </template>

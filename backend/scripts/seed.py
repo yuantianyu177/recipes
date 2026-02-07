@@ -4,13 +4,17 @@ Seed the database with sample data.
 
 Usage (dev):
   cd backend
-  python scripts/seed.py          # Insert seed data
-  python scripts/seed.py --reset  # Drop all tables, recreate, then seed
+  python scripts/seed.py                # Insert seed data (6 sample recipes)
+  python scripts/seed.py --reset        # Drop all tables, recreate, then seed
+  python scripts/seed.py --random 50    # Also generate 50 random recipes
+  python scripts/seed.py --reset --random 100
 
 Usage (Docker production):
   docker compose exec backend python scripts/seed.py --reset
+  docker compose exec backend python scripts/seed.py --reset --random 200
 """
 import asyncio
+import random
 import sys
 import os
 
@@ -393,6 +397,99 @@ async def reset_database():
     print("[OK] Database tables dropped and recreated.")
 
 
+async def _generate_random_recipes(db, count, tags, ings):
+    """Generate N random recipes using existing tags and ingredients."""
+    # Name templates: [cooking method] + [main ingredient] + [optional suffix]
+    COOK_METHODS = [
+        "红烧", "清蒸", "爆炒", "干煸", "油焖", "水煮", "糖醋", "蒜蓉",
+        "葱爆", "酱爆", "椒盐", "香煎", "炖", "卤", "焗", "烤", "凉拌",
+        "酸辣", "麻辣", "鱼香", "宫保", "家常", "蚝油", "豉汁", "咖喱",
+    ]
+    SUFFIXES = [
+        "", "", "", "丁", "片", "丝", "块", "卷", "煲", "汤",
+    ]
+    STEP_TEMPLATES = [
+        "<ol><li>准备好所有食材，洗净切好备用。</li>"
+        "<li>锅中加油烧至七成热，放入主要食材翻炒至变色。</li>"
+        "<li>加入调味料翻炒均匀，中火焖煮约5分钟。</li>"
+        "<li>大火收汁，撒上葱花即可出锅。</li></ol>",
+        "<ol><li>食材洗净，按需要切段、切片或切块。</li>"
+        "<li>起锅烧水，焯水去腥后捞出沥干。</li>"
+        "<li>另起锅热油，爆香葱姜蒜，下入食材快速翻炒。</li>"
+        "<li>调入生抽、料酒、盐等调味，大火翻炒2-3分钟即可装盘。</li></ol>",
+        "<ol><li>将所有食材清洗干净，主料切块，辅料切末。</li>"
+        "<li>热锅凉油，放入花椒、干辣椒炸出香味。</li>"
+        "<li>下入主料大火煸炒至断生，加入辅料继续翻炒。</li>"
+        "<li>加适量水，中小火焖煮10分钟至入味。</li>"
+        "<li>最后用大火收汁，淋少许香油，出锅装盘。</li></ol>",
+        "<ol><li>主料处理干净，辅料切好备用。</li>"
+        "<li>调制酱汁：生抽、老抽、糖、醋、水淀粉混合均匀。</li>"
+        "<li>起锅热油，放入姜片、蒜片爆香。</li>"
+        "<li>倒入主料翻炒至七八成熟，加入酱汁。</li>"
+        "<li>翻炒均匀，待汁水收浓即可起锅。</li></ol>",
+    ]
+    TIPS_TEMPLATES = [
+        "<ul><li>火候很关键，大火快炒能锁住食材的水分。</li><li>调味料可以根据个人口味调整。</li></ul>",
+        "<ul><li>焯水可以去掉食材的腥味和多余杂质。</li><li>出锅前可以淋少许香油增加风味。</li></ul>",
+        "<ul><li>食材要切均匀大小，确保受热一致。</li><li>不要放太多盐，可以出锅前尝味再调整。</li></ul>",
+        "<ul><li>如果喜欢口感更嫩，可以提前给主料上浆。</li><li>新手可以提前把调料都准备好，避免手忙脚乱。</li></ul>",
+    ]
+    DESC_TEMPLATES = [
+        "<p>经典{method}做法，味道鲜美，老少皆宜，是一道非常适合家庭烹饪的菜肴。</p>",
+        "<p>简单易学的{method}菜谱，适合新手入门。食材简单，步骤清晰，20分钟即可上桌。</p>",
+        "<p>这道{method}菜是传统家常菜的代表，口感层次丰富，下饭神器。</p>",
+        "<p>一道色香味俱全的{method}菜，营养均衡，适合日常餐桌。</p>",
+    ]
+
+    tag_list = list(tags.values())
+    ing_list = list(ings.values())
+    used_names = set()
+    created = 0
+
+    for i in range(count):
+        # Generate a unique recipe name
+        for _ in range(20):
+            method = random.choice(COOK_METHODS)
+            main_ing = random.choice(ing_list)
+            suffix = random.choice(SUFFIXES)
+            name = f"{method}{main_ing.name}{suffix}"
+            if name not in used_names:
+                used_names.add(name)
+                break
+        else:
+            name = f"{method}{main_ing.name}{suffix}_{i}"
+            used_names.add(name)
+
+        desc = random.choice(DESC_TEMPLATES).format(method=method)
+        steps = random.choice(STEP_TEMPLATES)
+        tips = random.choice(TIPS_TEMPLATES)
+
+        recipe = Recipe(name=name, description=desc, steps=steps, tips=tips)
+
+        # Assign 2~5 random tags
+        recipe_tags = random.sample(tag_list, min(random.randint(2, 5), len(tag_list)))
+        for t in recipe_tags:
+            recipe.tags.append(t)
+
+        db.add(recipe)
+        await db.flush()
+
+        # Assign 3~8 random ingredients with random amounts
+        recipe_ings = random.sample(ing_list, min(random.randint(3, 8), len(ing_list)))
+        for ing in recipe_ings:
+            # Generate a reasonable amount string
+            amount_val = random.choice(["适量", "少许", "1", "2", "3", "50g", "100g", "150g", "200g", "250g", "300g", "500g", "1个", "2个", "3个", "半个", "1根", "2根", "1块", "1把", "2片", "3片", "1勺", "2勺", "1小勺", "半勺"])
+            db.add(RecipeIngredient(
+                recipe_id=recipe.id,
+                ingredient_id=ing.id,
+                amount=amount_val,
+            ))
+        created += 1
+
+    print(f"[OK] Generated {created} random recipes.")
+    return created
+
+
 async def seed_data():
     """Insert sample data into the database."""
     engine = create_async_engine(settings.DATABASE_URL)
@@ -450,13 +547,24 @@ async def seed_data():
                     amount=amount,
                 ))
 
+        # Generate random recipes if --random N is specified
+        random_count = 0
+        if "--random" in sys.argv:
+            idx = sys.argv.index("--random")
+            if idx + 1 < len(sys.argv):
+                random_count = int(sys.argv[idx + 1])
+        if random_count > 0:
+            random_count = await _generate_random_recipes(db, random_count, tags, ings)
+
         await db.commit()
         print(f"[OK] Seed data inserted:")
         print(f"     Tag categories:        {len(TAG_CATEGORIES)}")
         print(f"     Tags:                  {len(TAGS)}")
         print(f"     Ingredient categories: {len(INGREDIENT_CATEGORIES)}")
         print(f"     Ingredients:           {len(INGREDIENTS)}")
-        print(f"     Recipes:               {len(RECIPES)}")
+        print(f"     Recipes (sample):      {len(RECIPES)}")
+        if random_count > 0:
+            print(f"     Recipes (random):      {random_count}")
 
     await engine.dispose()
 

@@ -24,35 +24,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* TipTap editor placeholder */
-.tiptap p.is-editor-empty:first-child::before {
-  color: #adb5bd;
-  content: attr(data-placeholder);
-  float: left;
-  height: 0;
-  pointer-events: none;
-}
-
-/* Prose styles within rich text */
-.prose p {
-  margin-bottom: 0.5em;
-}
-.prose h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-}
-.prose h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-top: 0.75em;
-  margin-bottom: 0.4em;
-}
-.prose ul, .prose ol {
-  padding-left: 1.5em;
-  margin-bottom: 0.5em;
-}
-.prose li {
-  margin-bottom: 0.2em;
-}
+/* Rich text styles are handled by scoped components:
+   - TipTapEditor.vue (editor mode)
+   - RichContent.vue  (display mode) */
