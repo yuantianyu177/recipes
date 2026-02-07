@@ -339,7 +339,7 @@ function triggerImport() {
               class="px-5 py-2 rounded-xl text-sm text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:shadow-lg hover:shadow-green-200 transition-all disabled:opacity-60"
               @click="handleExport"
             >
-              {{ exporting ? '导出中...' : `导出 ${selectedExportIds.length} 道` }}
+              {{ exporting ? '导出中...' : `导出` }}
             </button>
           </div>
         </div>
