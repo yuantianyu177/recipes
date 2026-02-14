@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useRecipeStore } from '../../stores/recipe'
-import { apiUploadImage, apiReorderImages } from '../../api/index'
+import { apiUploadImage, apiReorderImages, apiCreateRecipe } from '../../api/index'
 import TipTapEditor from '../../components/TipTapEditor.vue'
 
 const route = useRoute()
@@ -180,25 +180,53 @@ function removeIngredient(idx) {
 }
 
 // ===========================================
-// Image upload (local files)
+// Image upload (upload immediately to server)
 // ===========================================
-function triggerFileSelect() {
+const uploadingImages = ref(new Set())
+
+async function uploadImageImmediately(file) {
+  try {
+    let recipeId = route.params.id
+    if (!recipeId) {
+      const draft = await apiCreateRecipe({ name: '草稿-' + Date.now() })
+      recipeId = draft.id
+      window._draftRecipeId = recipeId
+    }
+    const uploaded = await apiUploadImage(recipeId, file)
+    return {
+      url: uploaded.image_path,
+      file: null,
+      id: uploaded.id,
+      _key: Date.now() + Math.random()
+    }
+  } catch (err) {
+    throw err
+  }
+}
+
+async function triggerFileSelect() {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*,.heic,.heif,.avif'
   input.multiple = true
-  input.onchange = (e) => {
+  input.onchange = async (e) => {
     for (const file of e.target.files) {
-      const url = URL.createObjectURL(file)
-      form.value.images.push({ url, file, _key: Date.now() + Math.random() })
+      const uploadKey = file.name + Date.now()
+      uploadingImages.value.add(uploadKey)
+      try {
+        const imgData = await uploadImageImmediately(file)
+        form.value.images.push(imgData)
+      } catch (err) {
+        message.error('图片上传失败: ' + (err.message || ''))
+      } finally {
+        uploadingImages.value.delete(uploadKey)
+      }
     }
   }
   input.click()
 }
 
 function removeImage(idx) {
-  const img = form.value.images[idx]
-  if (img.file) URL.revokeObjectURL(img.url)
   form.value.images.splice(idx, 1)
 }
 
@@ -216,6 +244,10 @@ function moveImage(idx, dir) {
 async function handleSubmit() {
   if (!form.value.name.trim()) {
     message.error('请输入菜谱名称')
+    return
+  }
+  if (uploadingImages.value.size > 0) {
+    message.warning('请等待图片上传完成')
     return
   }
   submitting.value = true
@@ -252,29 +284,20 @@ async function handleSubmit() {
     if (isEdit.value) {
       await store.updateRecipe(route.params.id, recipeData)
       recipeId = Number(route.params.id)
+    } else if (window._draftRecipeId) {
+      // Update the draft recipe
+      await store.updateRecipe(window._draftRecipeId, recipeData)
+      recipeId = window._draftRecipeId
+      delete window._draftRecipeId
     } else {
       recipeId = await store.addRecipe(recipeData)
     }
 
-    // Upload new images and collect their IDs in order
-    // Build final ordered image ID list preserving user's arrangement
-    const finalImageIds = []
-    for (const img of form.value.images) {
-      if (img.file) {
-        // New image: upload and collect returned ID
-        try {
-          const uploaded = await apiUploadImage(recipeId, img.file)
-          finalImageIds.push(uploaded.id)
-        } catch (err) {
-          message.warning('部分图片上传失败: ' + (err.message || ''))
-        }
-      } else if (img.id) {
-        // Existing image: keep its ID in order
-        finalImageIds.push(img.id)
-      }
-    }
+    // All images already uploaded, just reorder them
+    const finalImageIds = form.value.images
+      .map((img) => img.id)
+      .filter(Boolean)
 
-    // Reorder and clean up deleted images on backend
     if (finalImageIds.length > 0) {
       try {
         await apiReorderImages(recipeId, finalImageIds)
@@ -330,7 +353,10 @@ async function handleSubmit() {
 
       <!-- Cover Images -->
       <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-3" style="color: var(--color-text); font-family: var(--font-ui);">封面图片</label>
+        <label class="block text-sm font-semibold mb-3" style="color: var(--color-text); font-family: var(--font-ui);">
+          封面图片
+          <span v-if="uploadingImages.size > 0" class="ml-2 text-xs text-orange-500">(上传中...)</span>
+        </label>
         <div class="flex flex-wrap gap-3 mb-3">
           <div
             v-for="(img, idx) in form.images"
@@ -338,7 +364,10 @@ async function handleSubmit() {
             class="relative group w-28 h-28 rounded-xl overflow-hidden"
             style="border: 1px solid var(--color-border);"
           >
-            <img :src="img.url" class="w-full h-full object-cover" />
+            <img
+              :src="img.url"
+              class="w-full h-full object-cover"
+            />
             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
               <button
                 v-if="idx > 0"

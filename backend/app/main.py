@@ -5,6 +5,13 @@ import os
 
 from app.api import auth, recipes, tags, ingredients, search, upload, import_export, share
 
+# Register HEIF/HEIC support
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass
+
 app = FastAPI(title="Recipe API", version="0.1.0")
 
 app.add_middleware(

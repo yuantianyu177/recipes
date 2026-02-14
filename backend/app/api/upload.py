@@ -6,11 +6,13 @@ import aiofiles
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from PIL import Image
 
+# Register HEIF/HEIC support
 try:
     from pillow_heif import register_heif_opener
     register_heif_opener()
 except ImportError:
-    pass  # HEIC support optional
+    pass
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,9 +41,10 @@ async def upload_recipe_image(
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    # Validate file type by extension or MIME type
+    # Validate file type
     ext = os.path.splitext(file.filename or "")[1].lower()
     mime = (file.content_type or "").lower()
+
     if ext not in ALLOWED_EXTENSIONS and mime not in ALLOWED_MIMETYPES and not mime.startswith("image/"):
         raise HTTPException(status_code=400, detail=f"File type not allowed (ext={ext}, mime={mime})")
 
@@ -60,8 +63,8 @@ async def upload_recipe_image(
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85, optimize=True)
         content = buf.getvalue()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Cannot process image file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Cannot process image file: {e}")
 
     # Save file as .jpg
     filename = f"{uuid.uuid4().hex}.jpg"
