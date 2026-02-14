@@ -21,7 +21,8 @@ from app.models.models import Recipe, RecipeImage
 
 router = APIRouter(prefix="/api", tags=["upload"])
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".avif"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".avif", ".bmp", ".tiff", ".tif"}
+ALLOWED_MIMETYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif", "image/avif", "image/bmp", "image/tiff"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
@@ -38,10 +39,11 @@ async def upload_recipe_image(
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    # Validate file extension
+    # Validate file type by extension or MIME type
     ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"File type {ext} not allowed")
+    mime = (file.content_type or "").lower()
+    if ext not in ALLOWED_EXTENSIONS and mime not in ALLOWED_MIMETYPES and not mime.startswith("image/"):
+        raise HTTPException(status_code=400, detail=f"File type not allowed (ext={ext}, mime={mime})")
 
     # Read file content
     content = await file.read()
