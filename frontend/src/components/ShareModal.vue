@@ -27,12 +27,23 @@ function getCoverImageUrl(recipe) {
 }
 
 // Convert remote image to blob URL to avoid CORS re-download
+// Also wait for image to fully load before returning
 async function prefetchCoverAsBlob(url) {
   if (!url) return ''
   try {
     const resp = await fetch(url)
     const blob = await resp.blob()
-    return URL.createObjectURL(blob)
+    const blobUrl = URL.createObjectURL(blob)
+
+    // Wait for image to fully load to ensure it's ready for toPng
+    await new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = resolve
+      img.onerror = reject
+      img.src = blobUrl
+    })
+
+    return blobUrl
   } catch {
     return url // fallback to original
   }
