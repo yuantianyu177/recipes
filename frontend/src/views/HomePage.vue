@@ -121,26 +121,29 @@ function scrollToTop() {
 <template>
   <div>
     <!-- Hero Section -->
-    <div class="relative -mx-4 md:-mx-8 -mt-8 mb-10 px-4 md:px-8 pt-16 pb-12 overflow-hidden">
-      <!-- Background gradient -->
-      <div class="absolute inset-0 bg-gradient-to-br from-orange-50 via-red-50 to-amber-50" />
-      <div class="absolute top-0 right-0 w-96 h-96 bg-orange-200/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-      <div class="absolute bottom-0 left-0 w-72 h-72 bg-red-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
+    <div class="relative -mx-4 md:-mx-8 -mt-8 mb-10 px-4 md:px-8 pt-14 pb-10 overflow-hidden">
+      <div class="relative text-center max-w-2xl mx-auto animate-fade-in-up">
+        <!-- Logo mark as hero decoration -->
+        <svg class="mx-auto mb-5 hero-mark" width="48" height="48" viewBox="0 0 28 28" fill="none">
+          <path d="M14 4C14 4 8 8 8 14C8 17 10 20 14 22" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M14 4C14 4 20 8 20 14C20 17 18 20 14 22" stroke="var(--color-secondary)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M14 22V26" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="14" cy="4" r="1.5" fill="var(--color-primary)" opacity="0.6"/>
+          <path d="M10 10Q12 12 14 10" stroke="var(--color-primary)" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.4"/>
+          <path d="M14 10Q16 12 18 10" stroke="var(--color-secondary)" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.4"/>
+        </svg>
 
-      <div class="relative text-center max-w-2xl mx-auto">
-        <h1 class="text-4xl md:text-5xl font-extrabold mb-3">
-          <span class="bg-gradient-to-r from-orange-500 via-red-500 to-amber-500 bg-clip-text text-transparent">
-            我的菜谱
-          </span>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-3" style="font-family: var(--font-heading); color: var(--color-text);">
+          我的菜谱
         </h1>
-        <p class="text-gray-500 text-base md:text-lg mb-8">
+        <p class="text-sm sm:text-base md:text-lg mb-6 sm:mb-8" style="color: var(--color-text-muted); font-family: var(--font-body);">
           记录每一道美味，分享生活的味道
         </p>
 
         <!-- Search Bar -->
         <div class="relative max-w-lg mx-auto">
           <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5" style="color: var(--color-text-muted); opacity: 0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -148,11 +151,13 @@ function scrollToTop() {
             v-model="keyword"
             type="text"
             placeholder="搜索菜谱、食材..."
-            class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white shadow-lg shadow-orange-100/50 border border-white focus:border-orange-300 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-sm"
+            class="input-warm w-full pr-10 py-3.5 rounded-2xl"
+            style="padding-left: 2.5rem; box-shadow: 0 4px 16px rgba(61, 51, 41, 0.06);"
           />
           <button
             v-if="keyword"
-            class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+            class="absolute inset-y-0 right-3 flex items-center transition-colors"
+            style="color: var(--color-text-muted);"
             @click="keyword = ''"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,27 +171,24 @@ function scrollToTop() {
     <!-- Tag Filters -->
     <div class="mb-8">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wider">筛选标签</h2>
+        <h2 class="text-sm font-semibold uppercase tracking-wider" style="color: var(--color-text); font-family: var(--font-ui);">筛选标签</h2>
         <button
           v-if="hasActiveFilter"
-          class="text-xs text-orange-500 hover:text-orange-600 transition-colors"
+          class="text-xs transition-colors underline underline-offset-2"
+          style="color: var(--color-primary); font-family: var(--font-ui);"
           @click="clearFilters"
         >
           清除全部筛选
         </button>
       </div>
       <div v-for="(tags, category) in tagsByCategory" :key="category" class="mb-4 flex items-start gap-3">
-        <span class="text-xs font-medium text-gray-400 w-16 shrink-0 pt-2 text-right">{{ category }}</span>
-        <div class="flex flex-wrap gap-2">
+        <span class="text-xs font-medium w-16 shrink-0 pt-2 text-right hidden sm:block" style="color: var(--color-text-muted); font-family: var(--font-ui);">{{ category }}</span>
+        <div class="flex flex-wrap gap-2 overflow-x-auto sm:overflow-visible">
           <button
             v-for="tag in tags"
             :key="tag.id"
-            class="min-w-[3rem] px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 h-[30px] inline-flex items-center justify-center border"
-            :class="
-              selectedTags.includes(tag.name)
-                ? 'bg-gradient-to-r from-orange-400 to-red-500 text-white shadow-md shadow-orange-200 border-transparent'
-                : 'bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 border-gray-200 hover:border-orange-300'
-            "
+            class="tag-filter"
+            :class="{ 'tag-filter-active': selectedTags.includes(tag.name) }"
             @click="toggleTag(tag.name)"
           >
             {{ tag.name }}
@@ -197,44 +199,52 @@ function scrollToTop() {
 
     <!-- Loading indicator -->
     <div v-if="store.loading" class="flex items-center justify-center py-16">
-      <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-      <span class="ml-3 text-gray-400 text-sm">加载中...</span>
+      <div class="spinner-warm"></div>
+      <span class="ml-3 text-sm" style="color: var(--color-text-muted);">加载中...</span>
     </div>
 
     <!-- Results count -->
     <div v-if="!store.loading" class="flex items-center justify-between mb-5">
-      <p class="text-sm text-gray-400">
-        共 <span class="font-semibold text-gray-700">{{ allFilteredRecipes.length }}</span> 道菜谱
+      <p class="text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">
+        共 <span class="font-semibold" style="color: var(--color-text);">{{ allFilteredRecipes.length }}</span> 道菜谱
       </p>
     </div>
 
     <!-- Recipe Grid -->
     <div
       v-if="displayedRecipes.length > 0"
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children"
     >
       <RecipeCard v-for="recipe in displayedRecipes" :key="recipe.id" :recipe="recipe" @share="handleShare" />
     </div>
 
     <!-- Load more sentinel -->
     <div v-if="hasMore" ref="sentinelRef" class="flex items-center justify-center py-8">
-      <div class="w-6 h-6 border-3 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-      <span class="ml-2 text-sm text-gray-400">加载更多...</span>
+      <div class="spinner-warm-sm"></div>
+      <span class="ml-2 text-sm" style="color: var(--color-text-muted);">加载更多...</span>
     </div>
 
     <!-- All loaded hint -->
     <div v-else-if="displayedRecipes.length > PAGE_SIZE" class="text-center py-6">
-      <span class="text-xs text-gray-300">— 已全部加载 —</span>
+      <div class="wavy-divider max-w-xs mx-auto"></div>
+      <span class="text-xs mt-2 inline-block" style="color: var(--color-text-muted);">已全部加载</span>
     </div>
 
     <!-- Empty state -->
-    <div v-if="!store.loading && allFilteredRecipes.length === 0" class="text-center py-24">
-      <div class="text-6xl mb-4">🍽️</div>
-      <p class="text-lg text-gray-500 mb-2">没有找到菜谱</p>
-      <p class="text-sm text-gray-400">试试其他关键词或标签</p>
+    <div v-if="!store.loading && allFilteredRecipes.length === 0" class="text-center py-24 animate-fade-in-up">
+      <!-- Hand-drawn empty plate -->
+      <svg class="mx-auto mb-6" width="120" height="100" viewBox="0 0 120 100" fill="none">
+        <ellipse cx="60" cy="82" rx="38" ry="5" fill="var(--color-border)" opacity="0.4"/>
+        <ellipse cx="60" cy="52" rx="32" ry="28" stroke="var(--color-text-muted)" stroke-width="1.5" fill="var(--color-card)" stroke-linecap="round"/>
+        <ellipse cx="60" cy="50" rx="22" ry="18" stroke="var(--color-border)" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
+        <path d="M48 48Q54 42 60 48Q66 42 72 48" stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>
+        <path d="M52 56Q60 60 68 56" stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.4"/>
+      </svg>
+      <p class="text-lg mb-2" style="color: var(--color-text-muted); font-family: var(--font-heading);">没有找到菜谱</p>
+      <p class="text-sm mb-4" style="color: var(--color-text-muted);">试试其他关键词或标签</p>
       <button
         v-if="hasActiveFilter"
-        class="mt-4 px-4 py-2 rounded-xl text-sm text-orange-500 border border-orange-300 hover:bg-orange-50 transition-colors"
+        class="btn-ghost btn-sm"
         @click="clearFilters"
       >
         清除筛选
@@ -256,7 +266,7 @@ function scrollToTop() {
       >
         <button
           v-if="showBackToTop"
-          class="fixed bottom-8 right-8 z-40 w-11 h-11 rounded-full bg-white shadow-lg shadow-gray-200/50 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-orange-500 hover:border-orange-300 hover:shadow-orange-100/50 transition-all"
+          class="fixed bottom-8 right-8 z-40 btn-back-top"
           title="回到顶部"
           @click="scrollToTop"
         >
@@ -268,3 +278,54 @@ function scrollToTop() {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.hero-mark {
+  animation: floatGentle 3s ease-in-out infinite;
+}
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.tag-filter {
+  min-width: 3rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tag-filter:hover {
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+  transform: translateY(-1px);
+}
+.tag-filter-active {
+  background: var(--color-secondary);
+  color: white;
+  border-color: var(--color-secondary);
+  box-shadow: 0 2px 8px rgba(91, 122, 94, 0.3);
+}
+.tag-filter-active:hover {
+  background: var(--color-secondary-hover);
+  color: white;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .hero-mark {
+    width: 36px;
+    height: 36px;
+  }
+}
+</style>

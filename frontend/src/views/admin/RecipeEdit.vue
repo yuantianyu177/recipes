@@ -185,7 +185,7 @@ function removeIngredient(idx) {
 function triggerFileSelect() {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = 'image/*'
+  input.accept = 'image/*,.heic,.heif,.avif'
   input.multiple = true
   input.onchange = (e) => {
     for (const file of e.target.files) {
@@ -299,7 +299,8 @@ async function handleSubmit() {
     <!-- Header -->
     <div class="mb-8">
       <button
-        class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition-colors mb-3"
+        class="btn-ghost btn-sm inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-colors mb-3"
+        style="font-family: var(--font-ui);"
         @click="router.back()"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +308,7 @@ async function handleSubmit() {
         </svg>
         返回
       </button>
-      <h1 class="text-2xl font-extrabold text-gray-800">
+      <h1 class="section-heading text-2xl font-bold" style="color: var(--color-text);">
         {{ isEdit ? '编辑菜谱' : '新建菜谱' }}
       </h1>
     </div>
@@ -315,32 +316,34 @@ async function handleSubmit() {
     <!-- Form -->
     <div class="space-y-6">
       <!-- Name -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700 mb-2">
+      <div class="card-warm rounded-2xl p-6">
+        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">
           菜谱名称 <span class="text-red-400">*</span>
         </label>
         <input
           v-model="form.name"
           type="text"
           placeholder="例如：西红柿炒鸡蛋"
-          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-sm"
+          class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
         />
       </div>
 
       <!-- Cover Images -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700 mb-3">封面图片</label>
+      <div class="card-warm rounded-2xl p-6">
+        <label class="block text-sm font-semibold mb-3" style="color: var(--color-text); font-family: var(--font-ui);">封面图片</label>
         <div class="flex flex-wrap gap-3 mb-3">
           <div
             v-for="(img, idx) in form.images"
             :key="img._key || img.id || idx"
-            class="relative group w-28 h-28 rounded-xl overflow-hidden border border-gray-200"
+            class="relative group w-28 h-28 rounded-xl overflow-hidden"
+            style="border: 1px solid var(--color-border);"
           >
             <img :src="img.url" class="w-full h-full object-cover" />
             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
               <button
                 v-if="idx > 0"
-                class="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-xs text-gray-600 hover:bg-white"
+                class="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-xs hover:bg-white"
+                style="color: var(--color-text);"
                 @click="moveImage(idx, -1)"
               >←</button>
               <button
@@ -349,7 +352,8 @@ async function handleSubmit() {
               >✕</button>
               <button
                 v-if="idx < form.images.length - 1"
-                class="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-xs text-gray-600 hover:bg-white"
+                class="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-xs hover:bg-white"
+                style="color: var(--color-text);"
                 @click="moveImage(idx, 1)"
               >→</button>
             </div>
@@ -358,47 +362,48 @@ async function handleSubmit() {
             </div>
           </div>
           <button
-            class="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-orange-500 transition-colors"
+            class="w-28 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors"
+            style="border-color: var(--color-border); color: var(--color-text-muted);"
             @click="triggerFileSelect"
           >
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
             </svg>
-            <span class="text-xs">添加图片</span>
+            <span class="text-xs" style="font-family: var(--font-ui);">添加图片</span>
           </button>
         </div>
-        <p class="text-xs text-gray-400">支持 JPG、PNG 格式，可上传多张。保存后将自动上传至服务器。</p>
+        <p class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">支持 JPG、PNG、HEIC、AVIF 等格式，可上传多张。保存后将自动上传至服务器。</p>
       </div>
 
       <!-- Description -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700 mb-2">菜谱简介</label>
+      <div class="card-warm rounded-2xl p-6">
+        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">菜谱简介</label>
         <TipTapEditor v-model="form.description" placeholder="写一段简介..." />
       </div>
 
       <!-- Steps -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700 mb-2">烹饪步骤</label>
+      <div class="card-warm rounded-2xl p-6">
+        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">烹饪步骤</label>
         <TipTapEditor v-model="form.steps" placeholder="详细描述烹饪步骤..." />
       </div>
 
       <!-- Tips -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700 mb-2">小贴士</label>
+      <div class="card-warm rounded-2xl p-6">
+        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">小贴士</label>
         <textarea
           v-model="form.tips"
           placeholder="一些烹饪小技巧..."
           rows="2"
-          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-sm resize-none"
+          class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm resize-none"
         />
       </div>
 
       <!-- Ingredients (no category selector - category is on the ingredient itself) -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
+      <div class="card-warm rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
-          <label class="text-sm font-semibold text-gray-700">食材清单</label>
-          <span class="text-xs text-gray-400">
-            估算总热量：<span class="font-semibold text-orange-500">{{ totalCalories }} kcal</span>
+          <label class="text-sm font-semibold" style="color: var(--color-text); font-family: var(--font-ui);">食材清单</label>
+          <span class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">
+            估算总热量：<span class="font-semibold" style="color: var(--color-primary);">{{ totalCalories }} kcal</span>
           </span>
         </div>
 
@@ -406,7 +411,8 @@ async function handleSubmit() {
           <div
             v-for="(item, idx) in form.ingredients"
             :key="idx"
-            class="flex gap-2 items-center flex-wrap bg-gray-50 rounded-xl p-3"
+            class="flex gap-2 items-center flex-wrap rounded-xl p-2 sm:p-3"
+            style="background: var(--color-bg);"
           >
             <!-- Name with searchable dropdown -->
             <div class="relative flex-1 min-w-[140px]">
@@ -414,32 +420,34 @@ async function handleSubmit() {
                 v-model="ingredientSearch[idx]"
                 type="text"
                 placeholder="搜索食材..."
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-orange-300 outline-none text-sm"
+                class="input-warm w-full px-3 py-2 rounded-lg outline-none text-sm"
                 @focus="openIngredientDropdown(idx)"
                 @blur="closeIngredientDropdown"
                 @input="onIngredientSearchInput(idx)"
               />
               <svg
-                class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+                style="color: var(--color-text-muted);"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
               <div
                 v-if="ingredientDropdownIdx === idx"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto"
+                class="card-warm absolute top-full left-0 right-0 mt-1 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto"
               >
                 <button
                   v-for="ing in getIngredientFilteredList(idx)"
                   :key="ing.id"
-                  class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                  class="block w-full text-left px-3 py-2 text-sm transition-colors"
                   :class="{ 'bg-orange-50 text-orange-600': ing.name === item.name }"
+                  style="color: var(--color-text); font-family: var(--font-ui);"
                   @mousedown.prevent="selectIngredient(idx, ing)"
                 >
                   {{ ing.name }}
-                  <span class="text-gray-400 text-xs ml-1">({{ ing.unit }}<template v-if="ing.category"> · {{ ing.category }}</template>)</span>
+                  <span class="text-xs ml-1" style="color: var(--color-text-muted);">({{ ing.unit }}<template v-if="ing.category"> · {{ ing.category }}</template>)</span>
                 </button>
-                <div v-if="getIngredientFilteredList(idx).length === 0" class="px-3 py-3 text-center text-sm text-gray-400">
+                <div v-if="getIngredientFilteredList(idx).length === 0" class="px-3 py-3 text-center text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">
                   无匹配食材
                 </div>
               </div>
@@ -450,15 +458,16 @@ async function handleSubmit() {
               v-model="item.amount"
               type="text"
               placeholder="用量"
-              class="w-20 px-3 py-2 rounded-lg border border-gray-200 focus:border-orange-300 outline-none text-sm"
+              class="input-warm w-20 px-3 py-2 rounded-lg outline-none text-sm"
             />
 
             <!-- Unit (auto from ingredient) -->
-            <span class="text-xs text-gray-400 w-12 text-center">{{ item.unit || '单位' }}</span>
+            <span class="text-xs w-12 text-center" style="color: var(--color-text-muted); font-family: var(--font-ui);">{{ item.unit || '单位' }}</span>
 
             <!-- Remove -->
             <button
-              class="w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
+              class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+              style="color: var(--color-text-muted);"
               @click="removeIngredient(idx)"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -469,7 +478,8 @@ async function handleSubmit() {
         </div>
 
         <button
-          class="mt-3 w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 text-sm text-gray-400 hover:text-orange-500 transition-colors"
+          class="mt-3 w-full py-2.5 rounded-xl border-2 border-dashed text-sm transition-colors"
+          style="border-color: var(--color-border); color: var(--color-text-muted); font-family: var(--font-ui);"
           @click="addIngredient"
         >
           + 添加食材
@@ -477,19 +487,23 @@ async function handleSubmit() {
       </div>
 
       <!-- Tags (searchable dropdown with overflow fix) -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700 mb-3">标签</label>
+      <div class="card-warm rounded-2xl p-6">
+        <label class="block text-sm font-semibold mb-3" style="color: var(--color-text); font-family: var(--font-ui);">标签</label>
 
         <!-- Selected tags -->
-        <div class="flex flex-wrap gap-2 mb-3" v-if="form.tags.length">
-          <span
-            v-for="tag in form.tags"
-            :key="tag"
-            class="inline-flex items-center justify-center gap-1 text-xs px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 font-medium leading-none"
-          >
-            <span>{{ tag }}</span>
-            <button class="hover:text-red-500 ml-0.5 flex-shrink-0" @click="removeSelectedTag(tag)">×</button>
-          </span>
+        <div class="flex flex-wrap gap-2 mb-3 min-h-[2.5rem] items-center">
+          <template v-if="form.tags.length">
+            <span
+              v-for="tag in form.tags"
+              :key="tag"
+              class="tag-primary inline-flex items-center justify-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium leading-none"
+              style="font-family: var(--font-ui);"
+            >
+              <span>{{ tag }}</span>
+              <button class="hover:text-red-500 ml-0.5 flex-shrink-0" @click="removeSelectedTag(tag)">×</button>
+            </span>
+          </template>
+          <span v-else class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">尚未选择标签</span>
         </div>
 
         <!-- Dropdown trigger -->
@@ -498,13 +512,14 @@ async function handleSubmit() {
             v-model="tagSearch"
             type="text"
             placeholder="点击选择标签，或输入搜索..."
-            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-sm"
+            class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
             @focus="tagDropdownOpen = true"
             @blur="closeTagDropdown"
           />
           <svg
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none transition-transform"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-transform"
             :class="{ 'rotate-180': tagDropdownOpen }"
+            style="color: var(--color-text-muted);"
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
           >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -513,26 +528,27 @@ async function handleSubmit() {
           <!-- Dropdown panel - use fixed max-height and ensure it doesn't overflow viewport -->
           <div
             v-if="tagDropdownOpen"
-            class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto"
+            class="card-warm absolute left-0 right-0 mt-1 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto"
             :class="{ 'bottom-full mb-1': false }"
             style="max-height: min(14rem, 50vh);"
           >
             <template v-if="Object.keys(filteredTagsByCategory).length > 0">
               <div v-for="(catTags, category) in filteredTagsByCategory" :key="category">
-                <div class="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 sticky top-0 z-10">
+                <div class="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider sticky top-0 z-10" style="color: var(--color-text-muted); background: var(--color-bg); font-family: var(--font-ui);">
                   {{ category }}
                 </div>
                 <button
                   v-for="tag in catTags"
                   :key="tag.id"
-                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                  class="block w-full text-left px-4 py-2 text-sm transition-colors"
+                  style="color: var(--color-text); font-family: var(--font-ui);"
                   @mousedown.prevent="selectTag(tag.name)"
                 >
                   {{ tag.name }}
                 </button>
               </div>
             </template>
-            <div v-else class="px-4 py-6 text-center text-sm text-gray-400">
+            <div v-else class="px-4 py-6 text-center text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">
               没有更多可选标签
             </div>
           </div>
@@ -543,13 +559,15 @@ async function handleSubmit() {
       <div class="flex gap-3 pt-2 pb-12">
         <button
           :disabled="submitting"
-          class="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-red-500 text-white font-medium text-sm hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60"
+          class="btn-primary flex-1 py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-60"
+          style="font-family: var(--font-ui);"
           @click="handleSubmit"
         >
           {{ submitting ? '保存中...' : (isEdit ? '保存修改' : '创建菜谱') }}
         </button>
         <button
-          class="px-8 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
+          class="btn-soft px-8 py-3 rounded-xl text-sm transition-colors"
+          style="font-family: var(--font-ui);"
           @click="router.back()"
         >
           取消

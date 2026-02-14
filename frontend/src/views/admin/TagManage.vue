@@ -114,31 +114,29 @@ async function handleDeleteCategory(cat) {
   <div class="max-w-2xl mx-auto">
     <!-- Header -->
     <div class="mb-8">
-      <button
-        class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition-colors mb-3"
-        @click="router.push('/admin')"
-      >
+      <button class="btn-ghost btn-sm mb-3" @click="router.push('/admin')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
         返回管理
       </button>
-      <h1 class="text-2xl font-extrabold text-gray-800">标签管理</h1>
+      <h1 class="section-heading text-2xl font-bold" style="color: var(--color-text);">标签管理</h1>
     </div>
 
     <!-- Manage Tag Categories -->
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3">标签分类管理</h3>
+    <div class="card-warm rounded-2xl p-6 mb-6">
+      <h3 class="text-sm font-semibold mb-3 section-heading">标签分类管理</h3>
       <div class="flex flex-wrap gap-2 mb-3">
         <span
           v-for="cat in store.tagCategories"
           :key="cat.id"
-          class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 font-medium group"
+          class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full font-medium group"
+          style="background: var(--color-secondary-light); color: var(--color-secondary); font-family: var(--font-ui);"
         >
-          <span class="w-4 flex-shrink-0 opacity-0 group-hover:opacity-0">×</span>
           <span class="mx-1">{{ cat.name }}</span>
           <button
-            class="w-4 flex-shrink-0 text-blue-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+            class="w-4 flex-shrink-0 hover:text-red-500 transition-colors opacity-50 hover:opacity-100"
+            style="color: var(--color-secondary);"
             @click="handleDeleteCategory(cat)"
             title="删除分类"
           >
@@ -151,11 +149,11 @@ async function handleDeleteCategory(cat) {
           v-model="newCategoryName"
           type="text"
           placeholder="新分类名称"
-          class="flex-1 min-w-[120px] px-4 py-2 rounded-xl border border-gray-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+          class="input-warm flex-1 min-w-[120px] px-4 py-2 rounded-xl outline-none text-sm"
           @keyup.enter="handleAddCategory"
         />
         <button
-          class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-blue-200 transition-all whitespace-nowrap"
+          class="btn-secondary whitespace-nowrap"
           @click="handleAddCategory"
         >
           添加
@@ -164,14 +162,14 @@ async function handleDeleteCategory(cat) {
     </div>
 
     <!-- Add Tag -->
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3">新增标签</h3>
+    <div class="card-warm rounded-2xl p-6 mb-6">
+      <h3 class="text-sm font-semibold mb-3 section-heading">新增标签</h3>
       <div class="flex gap-2 items-center flex-wrap">
         <input
           v-model="newTagName"
           type="text"
           placeholder="标签名称"
-          class="flex-1 min-w-[140px] px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+          class="input-warm flex-1 min-w-[140px] px-4 py-2.5 rounded-xl outline-none text-sm"
           @keyup.enter="handleAddTag"
         />
 
@@ -181,38 +179,40 @@ async function handleDeleteCategory(cat) {
             v-model="catSearch"
             type="text"
             :placeholder="selectedCategoryName || '选择分类...'"
-            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-sm"
+            class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
             @focus="catDropdownOpen = true"
             @blur="closeCatDropdown"
           />
           <svg
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none transition-transform"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-transform"
             :class="{ 'rotate-180': catDropdownOpen }"
+            style="color: var(--color-text-muted);"
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
           >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
           <div
             v-if="catDropdownOpen"
-            class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto"
+            class="card-warm absolute top-full left-0 right-0 mt-1 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto"
           >
             <button
               v-for="cat in filteredCategories"
               :key="cat.id"
-              class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-              :class="{ 'bg-orange-50 text-orange-600': cat.id === newTagCategoryId }"
+              class="block w-full text-left px-4 py-2 text-sm transition-colors"
+              :class="{ 'dropdown-selected': cat.id === newTagCategoryId }"
+              style="color: var(--color-text); font-family: var(--font-ui);"
               @mousedown.prevent="selectCategory(cat)"
             >
               {{ cat.name }}
             </button>
-            <div v-if="filteredCategories.length === 0" class="px-4 py-3 text-center text-sm text-gray-400">
+            <div v-if="filteredCategories.length === 0" class="px-4 py-3 text-center text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">
               无匹配分类
             </div>
           </div>
         </div>
 
         <button
-          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-red-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-orange-200 transition-all"
+          class="btn-primary"
           @click="handleAddTag"
         >
           添加
@@ -225,19 +225,20 @@ async function handleDeleteCategory(cat) {
       <div
         v-for="(catTags, category) in tagsByCategory"
         :key="category"
-        class="bg-white rounded-2xl p-5 border border-gray-100"
+        class="card-warm rounded-2xl p-5"
       >
-        <h3 class="text-sm font-semibold text-gray-500 mb-3">{{ category }}</h3>
+        <h3 class="text-sm font-semibold mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">{{ category }}</h3>
         <div class="flex flex-wrap gap-2">
           <span
             v-for="tag in catTags"
             :key="tag.id"
-            class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 font-medium group leading-none"
+            class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full font-medium group leading-none"
+            style="background: var(--color-primary-light); color: var(--color-primary); font-family: var(--font-ui);"
           >
-            <span class="w-4 flex-shrink-0 opacity-0 group-hover:opacity-0">×</span>
             <span class="mx-1">{{ tag.name }}</span>
             <button
-              class="w-4 flex-shrink-0 text-orange-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+              class="w-4 flex-shrink-0 hover:text-red-500 transition-colors opacity-50 hover:opacity-100"
+              style="color: var(--color-primary);"
               @click="handleDeleteTag(tag.id)"
             >
               ×
@@ -250,7 +251,14 @@ async function handleDeleteCategory(cat) {
     <!-- Empty -->
     <div v-if="store.tags.length === 0" class="text-center py-20">
       <div class="text-5xl mb-3">🏷️</div>
-      <p class="text-gray-500">暂无标签</p>
+      <p style="color: var(--color-text-muted);">暂无标签</p>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dropdown-selected {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+</style>

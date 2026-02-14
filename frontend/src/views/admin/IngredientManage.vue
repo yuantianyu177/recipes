@@ -220,7 +220,7 @@ async function doDelete() {
     <!-- Header -->
     <div class="mb-8">
       <button
-        class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition-colors mb-3"
+        class="btn-ghost btn-sm mb-3"
         @click="router.push('/admin')"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,24 +228,25 @@ async function doDelete() {
         </svg>
         返回管理
       </button>
-      <h1 class="text-2xl font-extrabold text-gray-800">食材管理</h1>
-      <p class="text-sm text-gray-400 mt-0.5">管理全局食材库，包含标准单位、卡路里和分类信息</p>
+      <h1 class="section-heading text-2xl font-bold">食材管理</h1>
+      <p class="text-sm mt-0.5" style="color: var(--color-text-muted); font-family: var(--font-ui);">管理全局食材库，包含标准单位、卡路里和分类信息</p>
     </div>
 
     <!-- Ingredient Category Management -->
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3">食材分类管理</h3>
-      <p class="text-xs text-gray-400 mb-3">管理食材的角色分类（如主料、辅料等），新建食材时可选择分类</p>
+    <div class="card-warm rounded-2xl p-6 mb-6">
+      <h3 class="text-sm font-semibold mb-3 section-heading">食材分类管理</h3>
+      <p class="text-xs mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">管理食材的角色分类（如主料、辅料等），新建食材时可选择分类</p>
       <div class="flex flex-wrap gap-2 mb-3">
         <span
           v-for="cat in store.ingredientCategories"
           :key="cat.id"
-          class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full bg-green-50 text-green-600 font-medium group leading-none"
+          class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full font-medium group leading-none"
+          style="background: var(--color-secondary-light); color: var(--color-secondary); font-family: var(--font-ui);"
         >
-          <span class="w-4 flex-shrink-0 opacity-0 group-hover:opacity-0">×</span>
           <span class="mx-1">{{ cat.name }}</span>
           <button
-            class="w-4 flex-shrink-0 text-green-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+            class="w-4 flex-shrink-0 hover:text-red-500 transition-colors opacity-50 hover:opacity-100"
+            style="color: var(--color-secondary);"
             @click="handleDeleteCategory(cat)"
             title="删除分类"
           >
@@ -258,11 +259,11 @@ async function doDelete() {
           v-model="newCategoryName"
           type="text"
           placeholder="新分类名称"
-          class="flex-1 min-w-[120px] px-4 py-2 rounded-xl border border-gray-200 focus:border-green-300 focus:ring-2 focus:ring-green-100 outline-none text-sm"
+          class="input-warm flex-1 min-w-[120px] px-4 py-2 rounded-xl outline-none text-sm"
           @keyup.enter="handleAddCategory"
         />
         <button
-          class="px-5 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-green-200 transition-all whitespace-nowrap"
+          class="btn-secondary whitespace-nowrap"
           @click="handleAddCategory"
         >
           添加
@@ -271,21 +272,21 @@ async function doDelete() {
     </div>
 
     <!-- Add Ingredient -->
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3">新增食材</h3>
+    <div class="card-warm rounded-2xl p-6 mb-6">
+      <h3 class="text-sm font-semibold mb-3 section-heading">新增食材</h3>
       <div class="flex gap-2 items-center flex-wrap">
         <input
           v-model="newName"
           type="text"
           placeholder="食材名"
-          class="flex-1 min-w-[120px] px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+          class="input-warm flex-1 min-w-[120px] px-4 py-2.5 rounded-xl outline-none text-sm"
           @keyup.enter="handleAdd"
         />
         <input
           v-model="newUnit"
           type="text"
           placeholder="单位 (克/个/...)"
-          class="w-28 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+          class="input-warm w-28 px-4 py-2.5 rounded-xl outline-none text-sm"
         />
         <input
           v-model="newCalorie"
@@ -293,7 +294,7 @@ async function doDelete() {
           placeholder="kcal/单位"
           step="0.1"
           min="0"
-          class="w-28 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+          class="input-warm w-28 px-4 py-2.5 rounded-xl outline-none text-sm"
         />
         <!-- Category dropdown -->
         <div class="relative w-28">
@@ -301,30 +302,31 @@ async function doDelete() {
             v-model="newCatSearchText"
             type="text"
             :placeholder="selectedNewCatName || '分类'"
-            class="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+            class="input-warm w-full px-3 py-2.5 rounded-xl outline-none text-sm"
             @focus="newCatDropdownOpen = true"
             @blur="closeNewCatDropdown"
           />
           <div
             v-if="newCatDropdownOpen"
-            class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-36 overflow-y-auto min-w-[100px]"
+            class="card-warm absolute top-full left-0 right-0 mt-1 rounded-lg shadow-xl z-20 max-h-36 overflow-y-auto min-w-[100px]"
           >
             <button
               v-for="cat in filteredNewCats"
               :key="cat.id"
-              class="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-              :class="{ 'bg-orange-50 text-orange-600': cat.id === newCategoryId }"
+              class="block w-full text-left px-3 py-1.5 text-sm transition-colors"
+              :class="{ 'dropdown-selected': cat.id === newCategoryId }"
+              style="color: var(--color-text); font-family: var(--font-ui);"
               @mousedown.prevent="selectNewCat(cat)"
             >
               {{ cat.name }}
             </button>
-            <div v-if="filteredNewCats.length === 0" class="px-3 py-2 text-center text-xs text-gray-400">
+            <div v-if="filteredNewCats.length === 0" class="px-3 py-2 text-center text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">
               无匹配
             </div>
           </div>
         </div>
         <button
-          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-red-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-orange-200 transition-all"
+          class="btn-primary"
           @click="handleAdd"
         >
           添加
@@ -335,7 +337,7 @@ async function doDelete() {
     <!-- Search (full width) -->
     <div class="relative mb-5">
       <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4" style="color: var(--color-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
@@ -343,39 +345,43 @@ async function doDelete() {
         v-model="keyword"
         type="text"
         placeholder="搜索食材..."
-        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-gray-200 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-sm"
+        class="input-warm w-full pr-4 py-2.5 rounded-xl outline-none transition-all text-sm"
+        style="padding-left: 2.5rem;"
       />
     </div>
 
-    <p class="text-xs text-gray-400 mb-3">共 {{ filtered.length }} 种食材</p>
+    <p class="text-xs mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">共 {{ filtered.length }} 种食材</p>
 
     <!-- Ingredient List -->
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div class="card-warm rounded-2xl overflow-hidden">
       <div
         v-for="(item, idx) in filtered"
         :key="item.id"
-        class="px-5 py-3 hover:bg-gray-50 transition-colors"
-        :class="{ 'border-t border-gray-50': idx > 0 }"
+        class="px-5 py-3 transition-colors"
+        :class="{ 'border-t': idx > 0 }"
+        style="border-color: var(--color-bg);"
       >
         <!-- View mode -->
         <div v-if="editingId !== item.id" class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <span class="font-medium text-gray-800 text-sm">{{ item.name }}</span>
-            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ item.unit }}</span>
-            <span v-if="item.category" class="text-xs text-green-500 bg-green-50 px-2 py-0.5 rounded-full">{{ item.category }}</span>
+            <span class="font-medium text-sm" style="color: var(--color-text); font-family: var(--font-body);">{{ item.name }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full" style="color: var(--color-text-muted); background: var(--color-bg); font-family: var(--font-ui);">{{ item.unit }}</span>
+            <span v-if="item.category" class="text-xs px-2 py-0.5 rounded-full" style="color: var(--color-secondary); background: var(--color-secondary-light); font-family: var(--font-ui);">{{ item.category }}</span>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-xs text-gray-400 tabular-nums">
+            <span class="text-xs tabular-nums" style="color: var(--color-text-muted); font-family: var(--font-ui);">
               {{ item.calorie ? `${item.calorie} kcal` : '-' }}
             </span>
             <button
-              class="text-xs text-orange-500 hover:text-orange-600 transition-colors"
+              class="text-xs transition-colors"
+              style="color: var(--color-primary); font-family: var(--font-ui);"
               @click="startEdit(item)"
             >
               编辑
             </button>
             <button
-              class="text-xs text-gray-400 hover:text-red-500 transition-colors"
+              class="text-xs hover:text-red-500 transition-colors"
+              style="color: var(--color-text-muted); font-family: var(--font-ui);"
               @click="confirmDelete(item.id)"
             >
               删除
@@ -388,20 +394,23 @@ async function doDelete() {
           <input
             v-model="editForm.name"
             type="text"
-            class="flex-1 min-w-[100px] px-3 py-1.5 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+            class="flex-1 min-w-[100px] px-3 py-1.5 rounded-lg outline-none text-sm"
+            style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
           />
           <input
             v-model="editForm.unit"
             type="text"
             placeholder="单位"
-            class="w-20 px-3 py-1.5 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+            class="w-20 px-3 py-1.5 rounded-lg outline-none text-sm"
+            style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
           />
           <input
             v-model="editForm.calorie"
             type="number"
             placeholder="kcal"
             step="0.1"
-            class="w-20 px-3 py-1.5 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+            class="w-20 px-3 py-1.5 rounded-lg outline-none text-sm"
+            style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
           />
           <!-- Category dropdown for edit -->
           <div class="relative w-20">
@@ -409,19 +418,21 @@ async function doDelete() {
               v-model="editCatSearchText"
               type="text"
               :placeholder="selectedEditCatName || '分类'"
-              class="w-full px-2 py-1.5 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+              class="w-full px-2 py-1.5 rounded-lg outline-none text-sm"
+              style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
               @focus="editCatDropdownOpen = true"
               @blur="closeEditCatDropdown"
             />
             <div
               v-if="editCatDropdownOpen"
-              class="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-36 overflow-y-auto min-w-[100px]"
+              class="card-warm absolute top-full left-0 mt-1 rounded-lg shadow-xl z-20 max-h-36 overflow-y-auto min-w-[100px]"
             >
               <button
                 v-for="cat in filteredEditCats"
                 :key="cat.id"
-                class="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                :class="{ 'bg-orange-50 text-orange-600': cat.id === editForm.category_id }"
+                class="block w-full text-left px-3 py-1.5 text-sm transition-colors"
+                :class="{ 'dropdown-selected': cat.id === editForm.category_id }"
+                style="color: var(--color-text); font-family: var(--font-ui);"
                 @mousedown.prevent="selectEditCat(cat)"
               >
                 {{ cat.name }}
@@ -429,13 +440,13 @@ async function doDelete() {
             </div>
           </div>
           <button
-            class="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
+            class="btn-primary btn-sm"
             @click="saveEdit(item.id)"
           >
             保存
           </button>
           <button
-            class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-500 text-xs hover:bg-gray-200 transition-colors"
+            class="btn-soft btn-sm"
             @click="cancelEdit"
           >
             取消
@@ -445,7 +456,7 @@ async function doDelete() {
 
       <div v-if="filtered.length === 0" class="text-center py-12">
         <div class="text-4xl mb-2">🥬</div>
-        <p class="text-sm text-gray-400">暂无食材</p>
+        <p class="text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">暂无食材</p>
       </div>
     </div>
 
@@ -456,18 +467,18 @@ async function doDelete() {
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
         @click.self="showDeleteConfirm = false"
       >
-        <div class="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4">
-          <h3 class="text-lg font-bold text-gray-800 mb-2">确认删除</h3>
-          <p class="text-sm text-gray-500 mb-6">确定要删除这个食材吗？</p>
+        <div class="rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" style="background: var(--color-card);">
+          <h3 class="text-lg font-bold mb-2" style="color: var(--color-text); font-family: var(--font-heading);">确认删除</h3>
+          <p class="text-sm mb-6" style="color: var(--color-text-muted); font-family: var(--font-ui);">确定要删除这个食材吗？</p>
           <div class="flex gap-3 justify-end">
             <button
-              class="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              class="btn-soft"
               @click="showDeleteConfirm = false"
             >
               取消
             </button>
             <button
-              class="px-4 py-2 rounded-xl text-sm text-white bg-red-500 hover:bg-red-600 transition-colors"
+              class="btn-danger"
               @click="doDelete"
             >
               确认删除
@@ -478,3 +489,10 @@ async function doDelete() {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.dropdown-selected {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+</style>
