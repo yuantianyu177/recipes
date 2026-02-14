@@ -7,7 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p uploads
+# Create uploads directory and ensure proper permissions
+RUN mkdir -p /app/uploads && chmod 755 /app/uploads
 
 EXPOSE 8000
 

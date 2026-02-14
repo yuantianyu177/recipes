@@ -48,7 +48,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       UPLOAD_DIR: /app/uploads
     volumes:
-      - uploads_data:/app/uploads
+      - uploads_data:/app/uploads:rw
     depends_on:
       postgres:
         condition: service_healthy

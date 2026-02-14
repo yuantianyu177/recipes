@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "admin123"
 
     # Upload
-    UPLOAD_DIR: str = "./uploads"
+    UPLOAD_DIR: str = "/app/uploads"
 
     model_config = {"env_file": "../.env", "extra": "ignore"}
 
