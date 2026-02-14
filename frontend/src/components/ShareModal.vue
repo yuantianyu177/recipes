@@ -131,25 +131,85 @@ async function downloadImage() {
   // Convert data URL to blob
   const resp = await fetch(imageUrl.value)
   const blob = await resp.blob()
-  const file = new File([blob], fileName, { type: 'image/png' })
 
-  // Use Web Share API on mobile — triggers native share sheet (save to photos, AirDrop, etc.)
+  // 检测是否移动设备
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const isWeChat = /MicroMessenger/i.test(navigator.userAgent)
+
+  // iOS 微信内置浏览器特殊处理：引导用户长按保存
+  if (isWeChat && isIOS) {
+    alert('请长按图片，选择「保存图片」到相册')
+    return
+  }
+
+  // 尝试使用 Web Share API（支持 iOS Safari、Android Chrome 等）
+  const file = new File([blob], fileName, { type: 'image/png' })
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file] })
+      await navigator.share({
+        files: [file],
+        title: props.recipe?.name || '菜谱分享',
+        text: '来自我的菜谱'
+      })
       return
-    } catch {
-      // User cancelled or share failed, fall through to download
+    } catch (err) {
+      // 用户取消或分享失败，继续尝试其他方式
+      if (err.name === 'AbortError') {
+        return // 用户主动取消
+      }
     }
   }
 
-  // Fallback: traditional download
+  // iOS Safari：使用新窗口打开图片，让用户长按保存
+  if (isIOS) {
+    const url = URL.createObjectURL(blob)
+    const newWindow = window.open(url, '_blank')
+    if (newWindow) {
+      // 提示用户长按保存
+      setTimeout(() => {
+        alert('请长按图片，选择「存储图像」保存到相册')
+      }, 500)
+    } else {
+      // 弹窗被拦截，使用下载方式
+      triggerDownload(blob, fileName)
+    }
+    URL.revokeObjectURL(url)
+    return
+  }
+
+  // Android 及其他：尝试使用下载方式
+  triggerDownload(blob, fileName)
+}
+
+function triggerDownload(blob, fileName) {
   const url = URL.createObjectURL(blob)
+
+  // 优先使用 download 属性
   const a = document.createElement('a')
   a.href = url
   a.download = fileName
-  a.click()
-  URL.revokeObjectURL(url)
+  a.style.display = 'none'
+  document.body.appendChild(a)
+
+  // 兼容某些移动浏览器需要手动触发 click
+  if (a.click) {
+    a.click()
+  } else {
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    })
+    a.dispatchEvent(event)
+  }
+
+  document.body.removeChild(a)
+
+  // 延迟清理 URL
+  setTimeout(() => {
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 function close() {

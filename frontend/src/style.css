@@ -436,7 +436,7 @@ body::before {
 
   .input-warm {
     padding: 0.5rem 0.75rem;
-    font-size: 0.8125rem;
+    font-size: 16px; /* 防止 iOS 自动缩放 */
   }
 
   .card-warm {
