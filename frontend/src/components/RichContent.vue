@@ -1,6 +1,4 @@
 <script setup>
-// A wrapper component to render rich text HTML with proper list/heading styles.
-// Uses scoped :deep() to fully isolate styles from Tailwind CSS v4 preflight.
 defineProps({
   html: { type: String, default: '' },
 })
@@ -12,9 +10,10 @@ defineProps({
 
 <style scoped>
 .rich-content {
-  line-height: 1.75;
+  line-height: 1.9;
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--color-text, #3d3329);
+  font-family: var(--font-body, 'Noto Serif SC', serif);
 }
 
 /* Paragraphs */
@@ -28,12 +27,14 @@ defineProps({
   font-weight: 600;
   margin-top: 1em;
   margin-bottom: 0.5em;
+  font-family: var(--font-heading, 'Playfair Display', serif);
 }
 .rich-content :deep(h3) {
   font-size: 1.1rem;
   font-weight: 600;
   margin-top: 0.75em;
   margin-bottom: 0.4em;
+  font-family: var(--font-heading, 'Playfair Display', serif);
 }
 
 /* Unordered list */

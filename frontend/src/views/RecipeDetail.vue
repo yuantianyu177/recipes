@@ -34,7 +34,6 @@ function startAutoSlide() {
 
 function goToSlide(idx) {
   currentSlide.value = idx
-  // Reset timer on manual navigation
   if (slideTimer) clearInterval(slideTimer)
   startAutoSlide()
 }
@@ -62,7 +61,6 @@ const ingredientGroups = computed(() => {
   for (const item of recipe.value.ingredients) {
     const cat = item.category || '其他'
     if (!groups[cat]) groups[cat] = []
-    // Normalize field names (backend uses ingredient_name, frontend used name)
     groups[cat].push({
       ...item,
       name: item.ingredient_name || item.name || '',
@@ -84,25 +82,21 @@ function handleShare() {
 </script>
 
 <template>
-  <div v-if="recipe" class="max-w-3xl mx-auto">
+  <div v-if="recipe" class="max-w-3xl mx-auto animate-fade-in-up">
     <!-- Back button -->
-    <button
-      class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition-colors mb-6"
-      @click="router.back()"
-    >
+    <button class="btn-ghost btn-sm mb-6" @click="router.back()">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
       返回
     </button>
 
-    <!-- Image Carousel -->
+    <!-- Image Carousel — photo frame style -->
     <div
       v-if="imageList.length > 0"
-      class="relative rounded-3xl overflow-hidden mb-8 shadow-lg group"
+      class="relative rounded-xl sm:rounded-2xl overflow-hidden mb-6 sm:mb-8 group carousel-frame"
     >
-      <!-- Slides -->
-      <div class="relative aspect-[16/9] bg-gray-100">
+      <div class="relative aspect-[16/9] rounded-xl overflow-hidden" style="border: 1px solid var(--color-border);">
         <transition name="fade" mode="out-in">
           <img
             :key="currentSlide"
@@ -111,33 +105,30 @@ function handleShare() {
             class="absolute inset-0 w-full h-full object-cover"
           />
         </transition>
-
-        <!-- Gradient overlay bottom -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
       </div>
 
-      <!-- Arrow buttons (multi-image) -->
+      <!-- Arrow buttons -->
       <template v-if="imageCount > 1">
         <button
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+          class="carousel-arrow left-5"
           @click="prevSlide"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         </button>
         <button
-          class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+          class="carousel-arrow right-5"
           @click="nextSlide"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </button>
 
         <!-- Dots -->
-        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        <div class="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
           <button
             v-for="(_, idx) in imageList"
             :key="idx"
-            class="w-2 h-2 rounded-full transition-all duration-300"
-            :class="idx === currentSlide ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80'"
+            class="carousel-dot"
+            :class="{ 'carousel-dot-active': idx === currentSlide }"
             @click="goToSlide(idx)"
           />
         </div>
@@ -147,64 +138,62 @@ function handleShare() {
     <!-- Title & Meta -->
     <div class="mb-8">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 leading-tight">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight" style="font-family: var(--font-heading); color: var(--color-text);">
           {{ recipe.name }}
         </h1>
-        <button
-          class="shrink-0 mt-1 px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-green-200 transition-all"
-          @click="handleShare"
-        >
+        <button class="btn-secondary btn-sm shrink-0 mt-1" @click="handleShare">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
           分享
         </button>
       </div>
       <div class="flex flex-wrap gap-2 mt-4">
-        <span
-          v-for="tag in recipe.tags"
-          :key="tag.id"
-          class="inline-block text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-600 font-medium"
-        >
+        <span v-for="tag in recipe.tags" :key="tag.id" class="tag-secondary">
           {{ tag.name }}
         </span>
-        <span
-          v-if="calories > 0"
-          class="inline-block text-xs px-3 py-1 rounded-full bg-red-50 text-red-500 font-medium"
-        >
-          🔥 约 {{ calories }} kcal
+        <span v-if="calories > 0" class="tag-accent">
+          约 {{ calories }} kcal
         </span>
       </div>
     </div>
 
+    <!-- Wavy divider -->
+    <div class="wavy-divider mb-8"></div>
+
     <!-- Description -->
     <div
       v-if="recipe.description"
-      class="text-gray-600 leading-relaxed mb-8 bg-white rounded-2xl p-6 border border-gray-100"
+      class="card-warm rounded-2xl p-6 mb-8"
+      style="font-family: var(--font-body); line-height: 1.9;"
     >
       <RichContent :html="recipe.description" />
     </div>
 
     <!-- Ingredients -->
     <div class="mb-8">
-      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-lg">🥬</span>
+      <h2 class="section-heading text-xl mb-4">
+        <span class="section-icon" style="background: var(--color-secondary-light);">🥬</span>
         食材清单
       </h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div
           v-for="category in sortedCategories"
           :key="category"
-          class="bg-white rounded-2xl p-5 border border-gray-100"
+          class="card-warm rounded-2xl p-5"
         >
-          <h3 class="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">
+          <h3 class="text-sm font-semibold mb-3 uppercase tracking-wide" style="color: var(--color-text-muted); font-family: var(--font-ui);">
             {{ category }}
           </h3>
-          <div class="space-y-2">
+          <div>
             <div
-              v-for="item in ingredientGroups[category]"
+              v-for="(item, idx) in ingredientGroups[category]"
               :key="item.id"
-              class="flex justify-between items-center text-sm"
+              class="flex justify-between items-center text-sm py-2"
+              :style="idx < ingredientGroups[category].length - 1 ? 'border-bottom: 1px dashed var(--color-border);' : ''"
             >
-              <span class="text-gray-700">{{ item.name }}</span>
-              <span class="text-gray-400 tabular-nums">{{ item.amount }}{{ item.unit }}</span>
+              <span style="color: var(--color-text);">{{ item.name }}</span>
+              <span class="tabular-nums" style="color: var(--color-text-muted);">{{ item.amount }}{{ item.unit }}</span>
             </div>
           </div>
         </div>
@@ -213,22 +202,22 @@ function handleShare() {
 
     <!-- Steps -->
     <div class="mb-8">
-      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-lg">📝</span>
+      <h2 class="section-heading text-xl mb-4">
+        <span class="section-icon" style="background: var(--color-primary-light);">📝</span>
         烹饪步骤
       </h2>
-      <div class="bg-white rounded-2xl p-6 border border-gray-100 text-gray-700 leading-relaxed">
+      <div class="card-warm rounded-2xl p-6 leading-relaxed steps-card" style="font-family: var(--font-body); line-height: 1.9; color: var(--color-text);">
         <RichContent :html="recipe.steps" />
       </div>
     </div>
 
     <!-- Tips -->
     <div v-if="recipe.tips" class="mb-8">
-      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-lg">💡</span>
+      <h2 class="section-heading text-xl mb-4">
+        <span class="section-icon" style="background: var(--color-accent-light);">💡</span>
         小贴士
       </h2>
-      <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100 text-sm text-gray-700 leading-relaxed">
+      <div class="rounded-2xl p-6 text-sm leading-relaxed" style="background: var(--color-accent-light); border: 1px solid var(--color-accent); color: var(--color-text); font-family: var(--font-body); line-height: 1.9;">
         {{ recipe.tips }}
       </div>
     </div>
@@ -236,18 +225,18 @@ function handleShare() {
 
   <!-- Loading -->
   <div v-else-if="loadingDetail" class="flex items-center justify-center py-24">
-    <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-    <span class="ml-3 text-gray-400">加载中...</span>
+    <div class="spinner-warm"></div>
+    <span class="ml-3" style="color: var(--color-text-muted);">加载中...</span>
   </div>
 
   <!-- Not Found -->
-  <div v-else class="text-center py-24">
-    <div class="text-6xl mb-4">🍽️</div>
-    <p class="text-lg text-gray-500 mb-2">菜谱不存在</p>
-    <button
-      class="mt-4 px-4 py-2 rounded-xl text-sm text-orange-500 border border-orange-300 hover:bg-orange-50 transition-colors"
-      @click="router.push('/')"
-    >
+  <div v-else class="text-center py-24 animate-fade-in-up">
+    <svg class="mx-auto mb-4" width="80" height="70" viewBox="0 0 80 70" fill="none">
+      <ellipse cx="40" cy="35" rx="26" ry="22" stroke="var(--color-text-muted)" stroke-width="1.5" fill="var(--color-card)" stroke-linecap="round"/>
+      <ellipse cx="40" cy="33" rx="16" ry="12" stroke="var(--color-border)" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
+    </svg>
+    <p class="text-lg mb-2" style="color: var(--color-text-muted); font-family: var(--font-heading);">菜谱不存在</p>
+    <button class="btn-ghost btn-sm mt-4" @click="router.push('/')">
       返回首页
     </button>
   </div>
@@ -264,5 +253,69 @@ function handleShare() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.carousel-frame {
+  padding: 0.75rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 20px rgba(61, 51, 41, 0.08);
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 253, 248, 0.92);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  opacity: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(61, 51, 41, 0.1);
+}
+.group:hover .carousel-arrow {
+  opacity: 1;
+}
+.carousel-arrow:hover {
+  background: var(--color-card);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.carousel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-border);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.carousel-dot-active {
+  background: var(--color-primary);
+  width: 1.5rem;
+  border-radius: 999px;
+}
+
+.section-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.steps-card {
+  border-left: 3px solid var(--color-primary);
 }
 </style>

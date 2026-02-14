@@ -35,44 +35,38 @@ function handleShare(e) {
 
 <template>
   <router-link :to="`/recipe/${recipe.id}`" class="no-underline block group">
-    <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 h-full border border-gray-100 hover:border-gray-200 hover:-translate-y-1">
-      <!-- Cover Image -->
-      <div class="relative overflow-hidden aspect-[16/10]">
-        <img
-          :src="coverImage"
-          :alt="recipe.name"
-          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-        />
-        <!-- Gradient overlay -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+    <div class="recipe-card card-warm rounded-2xl overflow-hidden h-full">
+      <!-- Cover Image with photo frame feel -->
+      <div class="p-2.5 pb-0">
+        <div class="relative overflow-hidden rounded-xl aspect-[16/10] photo-frame">
+          <img
+            :src="coverImage"
+            :alt="recipe.name"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          />
 
-        <!-- Calorie badge -->
-        <div
-          v-if="calories > 0"
-          class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-orange-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm"
-        >
-          🔥 {{ calories }} kcal
-        </div>
+          <!-- Calorie badge -->
+          <div v-if="calories > 0" class="badge-overlay top-2.5 right-2.5">
+            {{ calories }} kcal
+          </div>
 
-        <!-- Image count badge -->
-        <div
-          v-if="recipe.images && recipe.images.length > 1"
-          class="absolute top-3 left-3 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full"
-        >
-          📷 {{ recipe.images.length }}
-        </div>
-
-        <!-- Title on image -->
-        <div class="absolute bottom-0 left-0 right-0 p-4">
-          <h3 class="text-lg font-bold text-white drop-shadow-lg leading-tight">
-            {{ recipe.name }}
-          </h3>
+          <!-- Image count badge -->
+          <div
+            v-if="recipe.images && recipe.images.length > 1"
+            class="absolute top-2.5 left-2.5 text-xs px-2 py-0.5 rounded-full"
+            style="background: rgba(61,51,41,0.55); color: white; backdrop-filter: blur(4px);"
+          >
+            {{ recipe.images.length }} 张
+          </div>
         </div>
       </div>
 
       <!-- Info -->
-      <div class="p-4">
-        <p v-if="mainIngredients" class="text-xs text-gray-400 mb-3 truncate">
+      <div class="p-4 pt-3">
+        <h3 class="text-base font-bold leading-tight mb-1" style="font-family: var(--font-heading); color: var(--color-text);">
+          {{ recipe.name }}
+        </h3>
+        <p v-if="mainIngredients" class="text-xs mb-3 truncate" style="color: var(--color-text-muted);">
           {{ mainIngredients }}
         </p>
         <div class="flex items-center gap-1.5">
@@ -80,13 +74,13 @@ function handleShare(e) {
             <span
               v-for="tag in recipe.tags.slice(0, 3)"
               :key="tag.id"
-              class="inline-block text-xs px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 font-medium"
+              class="tag-secondary"
             >
               {{ tag.name }}
             </span>
           </div>
           <button
-            class="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-full transition-colors"
+            class="share-btn"
             title="分享"
             @click="handleShare"
           >
@@ -100,3 +94,62 @@ function handleShare(e) {
     </div>
   </router-link>
 </template>
+
+<style scoped>
+.recipe-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.recipe-card:hover {
+  transform: translateY(-5px) rotate(-0.4deg);
+  box-shadow: 0 16px 40px rgba(61, 51, 41, 0.12);
+  border-color: var(--color-border-hover);
+}
+
+.photo-frame {
+  border: 1px solid var(--color-border);
+  transition: border-color 0.3s ease;
+}
+.recipe-card:hover .photo-frame {
+  border-color: var(--color-primary-light);
+}
+
+.badge-overlay {
+  position: absolute;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.92);
+  color: var(--color-primary);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(229, 221, 209, 0.5);
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-family: var(--font-ui);
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+.share-btn:hover {
+  background: var(--color-accent);
+  color: white;
+  transform: scale(1.05);
+}
+
+@media (max-width: 640px) {
+  .recipe-card:hover {
+    transform: translateY(-3px);
+  }
+}
+</style>

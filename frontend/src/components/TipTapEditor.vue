@@ -97,14 +97,15 @@ watch(
 
 <style scoped>
 .tiptap-wrap {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border, #e5ddd1);
   border-radius: 0.75rem;
   overflow: hidden;
   transition: all 0.15s;
+  background: var(--color-card, #fffdf8);
 }
 .tiptap-wrap:focus-within {
-  border-color: #fdba74;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.15);
+  border-color: var(--color-primary, #c45d3e);
+  box-shadow: 0 0 0 2px rgba(196, 93, 62, 0.12);
 }
 
 /* Toolbar */
@@ -113,8 +114,8 @@ watch(
   flex-wrap: wrap;
   gap: 2px;
   padding: 0.5rem;
-  border-bottom: 1px solid #f3f4f6;
-  background: rgba(249, 250, 251, 0.5);
+  border-bottom: 1px solid var(--color-border, #e5ddd1);
+  background: var(--color-bg, #f5f0e8);
 }
 .tiptap-btn {
   width: 2rem;
@@ -125,19 +126,19 @@ watch(
   justify-content: center;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-text-muted, #8c7e6f);
   transition: all 0.15s;
   cursor: pointer;
   border: none;
   background: none;
 }
 .tiptap-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-card, #fffdf8);
+  color: var(--color-text, #3d3329);
 }
 .tiptap-btn.active {
-  background: #fff7ed;
-  color: #ea580c;
+  background: var(--color-primary-light, #e8d5cf);
+  color: var(--color-primary, #c45d3e);
 }
 .tiptap-btn.small {
   font-size: 0.75rem;
@@ -146,7 +147,7 @@ watch(
 .tiptap-sep {
   width: 1px;
   height: 1.5rem;
-  background: #e5e7eb;
+  background: var(--color-border, #e5ddd1);
   margin: 0 0.25rem;
   align-self: center;
 }
@@ -159,15 +160,18 @@ watch(
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   line-height: 1.75;
+  font-family: var(--font-body, 'Noto Serif SC', serif);
+  color: var(--color-text, #3d3329);
 }
 
 /* Placeholder */
 .tiptap-wrap :deep(p.is-editor-empty:first-child::before) {
-  color: #adb5bd;
+  color: var(--color-text-muted, #8c7e6f);
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
+  opacity: 0.5;
 }
 
 /* Paragraphs */
@@ -181,12 +185,14 @@ watch(
   font-weight: 600;
   margin-top: 1em;
   margin-bottom: 0.5em;
+  font-family: var(--font-heading, 'Playfair Display', serif);
 }
 .tiptap-wrap :deep(h3) {
   font-size: 1.1rem;
   font-weight: 600;
   margin-top: 0.75em;
   margin-bottom: 0.4em;
+  font-family: var(--font-heading, 'Playfair Display', serif);
 }
 
 /* Unordered list */
