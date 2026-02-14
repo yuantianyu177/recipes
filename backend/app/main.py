@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.api import auth, recipes, tags, ingredients, search, upload, import_export, share
+from app.core.config import settings
 
 # Register HEIF/HEIC support
 try:
@@ -32,8 +33,8 @@ app.include_router(upload.router)
 app.include_router(import_export.router)
 app.include_router(share.router)
 
-# Serve uploaded files
-upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+# Serve uploaded files - use same path as upload.py
+upload_dir = os.path.abspath(settings.UPLOAD_DIR)
 os.makedirs(upload_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
