@@ -1,8 +1,16 @@
+import io
 import os
 import uuid
 
 import aiofiles
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from PIL import Image
+
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass  # HEIC support optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +21,7 @@ from app.models.models import Recipe, RecipeImage
 
 router = APIRouter(prefix="/api", tags=["upload"])
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".avif"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
@@ -40,8 +48,21 @@ async def upload_recipe_image(
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
-    # Save file
-    filename = f"{uuid.uuid4().hex}{ext}"
+    # Convert all images to JPEG
+    try:
+        img = Image.open(io.BytesIO(content))
+        if img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGB")
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85, optimize=True)
+        content = buf.getvalue()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Cannot process image file")
+
+    # Save file as .jpg
+    filename = f"{uuid.uuid4().hex}.jpg"
     upload_dir = os.path.abspath(settings.UPLOAD_DIR)
     os.makedirs(upload_dir, exist_ok=True)
     filepath = os.path.join(upload_dir, filename)

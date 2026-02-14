@@ -12,3 +12,5 @@ httpx
 pytest
 pytest-asyncio
 aiofiles
+Pillow
+pillow-heif
