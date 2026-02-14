@@ -2,26 +2,25 @@
 
 个人菜谱管理应用 — 记录每一道美味，分享生活的味道。
 
-支持菜谱的创建、编辑、搜索、分类筛选和一键分享为图片。
-
 ## 功能特性
 
-- 菜谱管理：创建 / 编辑 / 删除，支持多图片上传与排序
+- 菜谱管理：创建 / 编辑 / 删除，支持多图片上传
 - 食材清单：按分类管理食材，自动计算卡路里
-- 标签筛选：多维度标签分类（菜系、口味、场景、烹饪方式、难度）
+- 标签筛选：多维度标签分类
 - 全文搜索：基于 MeiliSearch 的模糊搜索，支持同义词
-- 分享图片：一键生成精美菜谱长图，可直接保存发送
+- 分享图片：一键生成精美菜谱长图
 - 管理后台：食材、标签、分类的增删改查，数据导入导出
-- 响应式布局：适配桌面端和移动端
+- 响应式布局：全面适配桌面端和移动端
 
 ## 技术栈
 
 | 层级 | 技术 |
 |------|------|
-| 前端 | Vue 3 + Vite 7 + Tailwind CSS 4 + Pinia + Naive UI |
-| 后端 | Python 3.11+ / FastAPI + SQLAlchemy (async) + Alembic |
+| 前端 | Vue 3 + Vite 7 + Tailwind CSS 4 + Pinia + Naive UI + TipTap 富文本 |
+| 后端 | Python 3.11+ / FastAPI + SQLAlchemy (async) + Alembic + Pillow |
 | 数据库 | PostgreSQL 16 |
 | 搜索引擎 | MeiliSearch 1.6 |
+| 图片处理 | Pillow + pillow-heif（HEIC/HEIF 支持） |
 | 部署 | Docker Compose / Nginx |
 
 ## 项目结构
