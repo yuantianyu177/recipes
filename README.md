@@ -43,45 +43,60 @@ recipes/
 │   │   ├── models/         # SQLAlchemy 模型
 │   │   ├── schemas/        # Pydantic 模型
 │   │   └── services/       # 业务逻辑 (搜索索引等)
-│   ├── scripts/            # 工具脚本 (seed.py 数据导入)
+│   ├── scripts/            # 工具脚本
 │   ├── Dockerfile
-│   └── requirements.txt
+└── requirements.txt
 ├── docker-compose.yml      # 生产部署编排
-├── docker-compose.dev.yml  # 开发环境 (仅 PostgreSQL + MeiliSearch)
-├── setup.sh                # 一键搭建开发环境
+├── docker-compose.dev.yml  # 开发环境编排
 ├── .env.example            # 环境变量模板
 └── .gitignore
 ```
 
 ## 开发
 
-所有依赖服务（PostgreSQL、MeiliSearch）和代码（后端、前端）均预设了相同的默认配置，开发环境零配置即可运行。
-
-### 一键启动
+### 启动开发环境
 
 ```bash
-bash setup.sh
+# 启动所有服务（PostgreSQL + MeiliSearch + Backend + Frontend）
+docker compose -f docker-compose.dev.yml up -d
+
+# 访问应用
+# 前端：http://localhost:5173
+# 后端 API：http://localhost:8000
+# API 文档：http://localhost:8000/docs
 ```
 
-脚本会自动检测并安装 Node.js、Python 3.11+、Docker，启动数据库容器，安装前后端依赖。完成后按提示分别启动前后端即可。
+### 初始化数据（可选）
 
 ```bash
-# 启动后端
-cd backend
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-# 运行在 http://localhost:8000，API 文档：http://localhost:8000/docs
+# 初始化测试数据（推荐）
+docker compose -f docker-compose.dev.yml exec backend python scripts/init_db.py
 
-# 启动前端
-cd frontend
-npm install
-npm run dev
-# 运行在 http://localhost:5173，自动代理 /api 和 /uploads 到后端
+# 清理数据库
+docker compose -f docker-compose.dev.yml exec backend python scripts/reset_db.py
+```
 
-# 4. 导入示例数据（可选）
-cd backend && source venv/bin/activate
-python scripts/seed.py
+### 运行测试
+
+```bash
+docker compose -f docker-compose.dev.yml exec backend pytest
+```
+
+### 查看日志
+
+```bash
+# 查看所有服务日志
+docker compose -f docker-compose.dev.yml logs -f
+
+# 查看特定服务日志
+docker compose -f docker-compose.dev.yml logs -f backend
+docker compose -f docker-compose.dev.yml logs -f frontend
+```
+
+### 停止服务
+
+```bash
+docker compose -f docker-compose.dev.yml down
 ```
 
 ## 部署
@@ -107,18 +122,24 @@ cp .env.example .env
 |------|------|--------|
 | `POSTGRES_USER` | 数据库用户名 | `recipe_user` |
 | `POSTGRES_DB` | 数据库名 | `recipe_db` |
+| `POSTGRES_HOST` | 数据库主机 | `localhost` |
+| `POSTGRES_PORT` | 数据库端口 | `5432` |
 | `ADMIN_USERNAME` | 管理后台用户名 | `admin` |
 | `FRONTEND_PORT` | 外部访问端口 | `80` |
+| `MEILI_HOST` | 搜索引擎地址 | `http://localhost:7700` |
+| `UPLOAD_DIR` | 文件上传目录 | `./uploads` |
 
-### 2. 构建并启动
+### 2. 启动所有服务
 
 ```bash
 docker compose up -d --build
 ```
 
 ### 3. 初始化数据
+
 ```bash
-docker compose exec backend python scripts/seed.py --reset
+# 初始化测试数据（推荐）
+docker compose exec backend python scripts/init_db.py
 ```
 
 启动后访问 `http://<服务器IP>` 即可使用。
