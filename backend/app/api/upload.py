@@ -28,6 +28,44 @@ ALLOWED_MIMETYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "imag
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
+@router.post("/upload/image")
+async def upload_general_image(
+    file: UploadFile = File(...),
+    _=Depends(verify_token),
+):
+    """Upload an image for markdown content. Returns the URL path."""
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    mime = (file.content_type or "").lower()
+
+    if ext not in ALLOWED_EXTENSIONS and mime not in ALLOWED_MIMETYPES and not mime.startswith("image/"):
+        raise HTTPException(status_code=400, detail=f"File type not allowed (ext={ext}, mime={mime})")
+
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+
+    try:
+        img = Image.open(io.BytesIO(content))
+        if img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGB")
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85, optimize=True)
+        content = buf.getvalue()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Cannot process image file: {e}")
+
+    filename = f"{uuid.uuid4().hex}.jpg"
+    upload_dir = os.path.abspath(settings.UPLOAD_DIR)
+    os.makedirs(upload_dir, exist_ok=True)
+    filepath = os.path.join(upload_dir, filename)
+    async with aiofiles.open(filepath, "wb") as f:
+        await f.write(content)
+
+    return {"url": f"/uploads/{filename}"}
+
+
 @router.post("/recipes/{recipe_id}/images")
 async def upload_recipe_image(
     recipe_id: int,

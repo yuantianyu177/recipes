@@ -12,6 +12,7 @@ class TagCategory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
+    color = Column(String(7), nullable=True)
 
     tags = relationship("Tag", back_populates="category_rel")
 
@@ -21,6 +22,7 @@ class IngredientCategory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
+    color = Column(String(7), nullable=True)
 
     ingredients = relationship("Ingredient", back_populates="category_rel")
 

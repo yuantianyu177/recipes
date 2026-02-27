@@ -69,6 +69,7 @@ class RecipeListOut(BaseModel):
     updated_at: str | None = None
     images: list[RecipeImageOut] = []
     tags: list["TagBrief"] = []
+    ingredients: list[RecipeIngredientOut] = []
 
     model_config = {"from_attributes": True}
 
@@ -77,5 +78,6 @@ class TagBrief(BaseModel):
     id: int
     name: str
     category: str = ""
+    color: str | None = None
 
     model_config = {"from_attributes": True}

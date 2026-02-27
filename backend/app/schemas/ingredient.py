@@ -8,6 +8,7 @@ class IngredientCategoryCreate(BaseModel):
 class IngredientCategoryOut(BaseModel):
     id: int
     name: str
+    color: str | None = None
 
     model_config = {"from_attributes": True}
 
