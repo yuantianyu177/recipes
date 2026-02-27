@@ -114,7 +114,7 @@ export const useRecipeStore = defineStore('recipe', () => {
   // --- Search (via MeiliSearch API) ---
 
   async function searchRecipes(keyword, selectedTags = []) {
-    if (!keyword && selectedTags.length === 0) return recipes.value
+    if (!keyword && selectedTags.length === 0) return [...recipes.value]
     let result = recipes.value
     if (keyword) {
       try {

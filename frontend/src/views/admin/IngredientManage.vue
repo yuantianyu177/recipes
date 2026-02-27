@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useRecipeStore } from '../../stores/recipe'
@@ -16,7 +16,22 @@ const newCategoryId = ref(null)
 
 onMounted(async () => {
   await Promise.all([store.fetchIngredients(), store.fetchIngredientCategories()])
+  setupScrollAnimations()
 })
+
+function setupScrollAnimations() {
+  const fadeObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible')
+      })
+    },
+    { threshold: 0.1 }
+  )
+  nextTick(() => {
+    document.querySelectorAll('.fade-up').forEach(el => fadeObserver.observe(el))
+  })
+}
 
 // --- Category management ---
 const newCategoryName = ref('')
@@ -64,6 +79,12 @@ function selectNewCat(cat) {
   newCategoryId.value = cat.id
   newCatSearchText.value = ''
   newCatDropdownOpen.value = false
+}
+
+function toggleNewCatDropdown(e) {
+  if (document.activeElement === e.target) {
+    newCatDropdownOpen.value = !newCatDropdownOpen.value
+  }
 }
 
 function closeNewCatDropdown() {
@@ -142,6 +163,12 @@ function selectEditCat(cat) {
   editCatDropdownOpen.value = false
 }
 
+function toggleEditCatDropdown(e) {
+  if (document.activeElement === e.target) {
+    editCatDropdownOpen.value = !editCatDropdownOpen.value
+  }
+}
+
 function closeEditCatDropdown() {
   setTimeout(() => { editCatDropdownOpen.value = false }, 200)
 }
@@ -192,6 +219,12 @@ function getCategoryName(catId) {
   return cat ? cat.name : '-'
 }
 
+function getCategoryColor(catId) {
+  if (!catId) return null
+  const cat = store.ingredientCategories.find((c) => c.id === catId)
+  return cat?.color || null
+}
+
 // --- Delete ---
 const showDeleteConfirm = ref(false)
 const pendingDeleteId = ref(null)
@@ -216,283 +249,501 @@ async function doDelete() {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <button
-        class="btn-ghost btn-sm mb-3"
-        @click="router.push('/admin')"
-      >
+  <div class="admin-ingredient max-w-3xl mx-auto">
+    <!-- Editorial Header -->
+    <section class="admin-hero fade-up">
+      <button class="back-btn" @click="router.push('/admin')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-        返回管理
+        返回
       </button>
-      <h1 class="section-heading text-2xl font-bold">食材管理</h1>
-      <p class="text-sm mt-0.5" style="color: var(--color-text-muted); font-family: var(--font-ui);">管理全局食材库，包含标准单位、卡路里和分类信息</p>
-    </div>
+      <p class="admin-subtitle">Ingredient Library</p>
+      <div class="deco-line mb-4"></div>
+      <h1 class="admin-title">食材管理</h1>
+      <p class="admin-desc">管理全局食材库，包含标准单位、卡路里和分类信息。</p>
+    </section>
 
     <!-- Ingredient Category Management -->
-    <div class="card-warm rounded-2xl p-6 mb-6">
-      <h3 class="text-sm font-semibold mb-3 section-heading">食材分类管理</h3>
-      <p class="text-xs mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">管理食材的角色分类（如主料、辅料等），新建食材时可选择分类</p>
-      <div class="flex flex-wrap gap-2 mb-3">
-        <span
-          v-for="cat in store.ingredientCategories"
-          :key="cat.id"
-          class="inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-full font-medium group leading-none"
-          style="background: var(--color-secondary-light); color: var(--color-secondary); font-family: var(--font-ui);"
-        >
-          <span class="mx-1">{{ cat.name }}</span>
-          <button
-            class="w-4 flex-shrink-0 hover:text-red-500 transition-colors opacity-50 hover:opacity-100"
-            style="color: var(--color-secondary);"
-            @click="handleDeleteCategory(cat)"
-            title="删除分类"
+    <section class="manage-section fade-up">
+      <div class="section-label">
+        <span>食材分类</span>
+        <span class="w-8 h-px" style="background: var(--color-secondary);"></span>
+      </div>
+      <div class="card-warm rounded-2xl p-6">
+        <p class="text-xs mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">管理食材的角色分类（如主料、辅料等），新建食材时可选择分类</p>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span
+            v-for="cat in store.ingredientCategories"
+            :key="cat.id"
+            class="category-pill"
+            :style="cat.color ? { background: cat.color + '1a', color: cat.color } : {}"
           >
-            ×
-          </button>
-        </span>
+            <span>{{ cat.name }}</span>
+            <button class="pill-delete" @click="handleDeleteCategory(cat)" title="删除分类">×</button>
+          </span>
+        </div>
+        <div class="flex gap-2 items-center">
+          <input
+            v-model="newCategoryName"
+            type="text"
+            placeholder="新分类名称"
+            class="input-warm flex-1 min-w-[120px] px-4 py-2.5 rounded-xl outline-none text-sm"
+            @keyup.enter="handleAddCategory"
+          />
+          <button class="btn-secondary" @click="handleAddCategory">添加</button>
+        </div>
       </div>
-      <div class="flex gap-2 items-center">
-        <input
-          v-model="newCategoryName"
-          type="text"
-          placeholder="新分类名称"
-          class="input-warm flex-1 min-w-[120px] px-4 py-2 rounded-xl outline-none text-sm"
-          @keyup.enter="handleAddCategory"
-        />
-        <button
-          class="btn-secondary whitespace-nowrap"
-          @click="handleAddCategory"
-        >
-          添加
-        </button>
-      </div>
-    </div>
+    </section>
 
     <!-- Add Ingredient -->
-    <div class="card-warm rounded-2xl p-6 mb-6">
-      <h3 class="text-sm font-semibold mb-3 section-heading">新增食材</h3>
-      <div class="flex gap-2 items-center flex-wrap">
-        <input
-          v-model="newName"
-          type="text"
-          placeholder="食材名"
-          class="input-warm flex-1 min-w-[120px] px-4 py-2.5 rounded-xl outline-none text-sm"
-          @keyup.enter="handleAdd"
-        />
-        <input
-          v-model="newUnit"
-          type="text"
-          placeholder="单位 (克/个/...)"
-          class="input-warm w-28 px-4 py-2.5 rounded-xl outline-none text-sm"
-        />
-        <input
-          v-model="newCalorie"
-          type="number"
-          placeholder="kcal/单位"
-          step="0.1"
-          min="0"
-          class="input-warm w-28 px-4 py-2.5 rounded-xl outline-none text-sm"
-        />
-        <!-- Category dropdown -->
-        <div class="relative w-28">
-          <input
-            v-model="newCatSearchText"
-            type="text"
-            :placeholder="selectedNewCatName || '分类'"
-            class="input-warm w-full px-3 py-2.5 rounded-xl outline-none text-sm"
-            @focus="newCatDropdownOpen = true"
-            @blur="closeNewCatDropdown"
-          />
-          <div
-            v-if="newCatDropdownOpen"
-            class="card-warm absolute top-full left-0 right-0 mt-1 rounded-lg shadow-xl z-20 max-h-36 overflow-y-auto min-w-[100px]"
-          >
-            <button
-              v-for="cat in filteredNewCats"
-              :key="cat.id"
-              class="block w-full text-left px-3 py-1.5 text-sm transition-colors"
-              :class="{ 'dropdown-selected': cat.id === newCategoryId }"
-              style="color: var(--color-text); font-family: var(--font-ui);"
-              @mousedown.prevent="selectNewCat(cat)"
-            >
-              {{ cat.name }}
-            </button>
-            <div v-if="filteredNewCats.length === 0" class="px-3 py-2 text-center text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">
-              无匹配
+    <section class="manage-section fade-up" style="z-index: 10;">
+      <div class="section-label">
+        <span>新增食材</span>
+        <span class="w-8 h-px" style="background: var(--color-primary);"></span>
+      </div>
+      <div class="card-warm rounded-2xl p-6">
+        <div class="flex gap-2 items-center flex-wrap">
+          <input v-model="newName" type="text" placeholder="食材名" class="input-warm flex-1 min-w-[120px] px-4 py-2.5 rounded-xl outline-none text-sm" @keyup.enter="handleAdd" />
+          <input v-model="newUnit" type="text" placeholder="单位 (克/个/...)" class="input-warm w-28 px-4 py-2.5 rounded-xl outline-none text-sm" />
+          <input v-model="newCalorie" type="number" placeholder="kcal/单位" step="0.1" min="0" class="input-warm w-28 px-4 py-2.5 rounded-xl outline-none text-sm" />
+          <!-- Category dropdown -->
+          <div class="relative w-28">
+            <input
+              v-model="newCatSearchText"
+              type="text"
+              :placeholder="selectedNewCatName || '分类'"
+              class="input-warm w-full px-3 py-2.5 rounded-xl outline-none text-sm"
+              @focus="newCatDropdownOpen = true"
+              @mousedown="toggleNewCatDropdown"
+              @blur="closeNewCatDropdown"
+            />
+            <div v-if="newCatDropdownOpen" class="dropdown-panel">
+              <button
+                v-for="cat in filteredNewCats"
+                :key="cat.id"
+                class="dropdown-item"
+                :class="{ 'dropdown-selected': cat.id === newCategoryId }"
+                :style="cat.color ? { color: cat.color } : {}"
+                @mousedown.prevent="selectNewCat(cat)"
+              >
+                {{ cat.name }}
+              </button>
+              <div v-if="filteredNewCats.length === 0" class="dropdown-empty">无匹配</div>
             </div>
           </div>
+          <button class="btn-primary" @click="handleAdd">添加</button>
         </div>
-        <button
-          class="btn-primary"
-          @click="handleAdd"
-        >
-          添加
-        </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Search (full width) -->
-    <div class="relative mb-5">
-      <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-        <svg class="w-4 h-4" style="color: var(--color-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <!-- Search -->
+    <section class="manage-section fade-up">
+      <div class="elegant-divider mb-4">
+        <span>食材列表</span>
+      </div>
+      <div class="relative mb-4">
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
+        <input
+          v-model="keyword"
+          type="text"
+          placeholder="搜索食材..."
+          class="search-input"
+        />
       </div>
-      <input
-        v-model="keyword"
-        type="text"
-        placeholder="搜索食材..."
-        class="input-warm w-full pr-4 py-2.5 rounded-xl outline-none transition-all text-sm"
-        style="padding-left: 2.5rem;"
-      />
-    </div>
-
-    <p class="text-xs mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">共 {{ filtered.length }} 种食材</p>
+      <p class="text-xs mb-3" style="color: var(--color-text-muted); font-family: var(--font-ui);">共 <strong style="color: var(--color-text);">{{ filtered.length }}</strong> 种食材</p>
+    </section>
 
     <!-- Ingredient List -->
-    <div class="card-warm rounded-2xl overflow-hidden">
+    <div class="card-warm rounded-2xl fade-up" style="position: relative; z-index: 5;">
       <div
         v-for="(item, idx) in filtered"
         :key="item.id"
-        class="px-5 py-3 transition-colors"
+        class="ingredient-row"
         :class="{ 'border-t': idx > 0 }"
-        style="border-color: var(--color-bg);"
       >
         <!-- View mode -->
         <div v-if="editingId !== item.id" class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <span class="font-medium text-sm" style="color: var(--color-text); font-family: var(--font-body);">{{ item.name }}</span>
-            <span class="text-xs px-2 py-0.5 rounded-full" style="color: var(--color-text-muted); background: var(--color-bg); font-family: var(--font-ui);">{{ item.unit }}</span>
-            <span v-if="item.category" class="text-xs px-2 py-0.5 rounded-full" style="color: var(--color-secondary); background: var(--color-secondary-light); font-family: var(--font-ui);">{{ item.category }}</span>
+            <span class="ingredient-name">{{ item.name }}</span>
+            <span class="ingredient-unit">{{ item.unit }}</span>
+            <span v-if="item.category" class="ingredient-cat" :style="getCategoryColor(item.category_id) ? { background: getCategoryColor(item.category_id) + '1a', color: getCategoryColor(item.category_id) } : {}">{{ item.category }}</span>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-xs tabular-nums" style="color: var(--color-text-muted); font-family: var(--font-ui);">
+            <span class="ingredient-calorie">
               {{ item.calorie ? `${item.calorie} kcal` : '-' }}
             </span>
-            <button
-              class="text-xs transition-colors"
-              style="color: var(--color-primary); font-family: var(--font-ui);"
-              @click="startEdit(item)"
-            >
-              编辑
-            </button>
-            <button
-              class="text-xs hover:text-red-500 transition-colors"
-              style="color: var(--color-text-muted); font-family: var(--font-ui);"
-              @click="confirmDelete(item.id)"
-            >
-              删除
-            </button>
+            <button class="row-action-edit" @click="startEdit(item)">编辑</button>
+            <button class="row-action-delete" @click="confirmDelete(item.id)">删除</button>
           </div>
         </div>
 
         <!-- Edit mode -->
         <div v-else class="flex gap-2 items-center flex-wrap">
-          <input
-            v-model="editForm.name"
-            type="text"
-            class="flex-1 min-w-[100px] px-3 py-1.5 rounded-lg outline-none text-sm"
-            style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
-          />
-          <input
-            v-model="editForm.unit"
-            type="text"
-            placeholder="单位"
-            class="w-20 px-3 py-1.5 rounded-lg outline-none text-sm"
-            style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
-          />
-          <input
-            v-model="editForm.calorie"
-            type="number"
-            placeholder="kcal"
-            step="0.1"
-            class="w-20 px-3 py-1.5 rounded-lg outline-none text-sm"
-            style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
-          />
+          <input v-model="editForm.name" type="text" class="edit-input flex-1 min-w-[100px]" />
+          <input v-model="editForm.unit" type="text" placeholder="单位" class="edit-input w-20" />
+          <input v-model="editForm.calorie" type="number" placeholder="kcal" step="0.1" class="edit-input w-20" />
           <!-- Category dropdown for edit -->
           <div class="relative w-20">
             <input
               v-model="editCatSearchText"
               type="text"
               :placeholder="selectedEditCatName || '分类'"
-              class="w-full px-2 py-1.5 rounded-lg outline-none text-sm"
-              style="border: 1px solid var(--color-primary); font-family: var(--font-ui);"
+              class="edit-input w-full"
               @focus="editCatDropdownOpen = true"
+              @mousedown="toggleEditCatDropdown"
               @blur="closeEditCatDropdown"
             />
-            <div
-              v-if="editCatDropdownOpen"
-              class="card-warm absolute top-full left-0 mt-1 rounded-lg shadow-xl z-20 max-h-36 overflow-y-auto min-w-[100px]"
-            >
+            <div v-if="editCatDropdownOpen" class="dropdown-panel">
               <button
                 v-for="cat in filteredEditCats"
                 :key="cat.id"
-                class="block w-full text-left px-3 py-1.5 text-sm transition-colors"
+                class="dropdown-item"
                 :class="{ 'dropdown-selected': cat.id === editForm.category_id }"
-                style="color: var(--color-text); font-family: var(--font-ui);"
+                :style="cat.color ? { color: cat.color } : {}"
                 @mousedown.prevent="selectEditCat(cat)"
               >
                 {{ cat.name }}
               </button>
             </div>
           </div>
-          <button
-            class="btn-primary btn-sm"
-            @click="saveEdit(item.id)"
-          >
-            保存
-          </button>
-          <button
-            class="btn-soft btn-sm"
-            @click="cancelEdit"
-          >
-            取消
-          </button>
+          <button class="btn-primary btn-sm" @click="saveEdit(item.id)">保存</button>
+          <button class="btn-soft btn-sm" @click="cancelEdit">取消</button>
         </div>
       </div>
 
-      <div v-if="filtered.length === 0" class="text-center py-12">
-        <div class="text-4xl mb-2">🥬</div>
+      <div v-if="filtered.length === 0" class="empty-state-inline">
+        <svg class="mx-auto mb-2" width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="16" stroke="var(--color-border)" stroke-width="1.5" fill="none" />
+          <path d="M18 24h12" stroke="var(--color-border)" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
         <p class="text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">暂无食材</p>
       </div>
     </div>
 
     <!-- Delete confirmation -->
     <Teleport to="body">
-      <div
-        v-if="showDeleteConfirm"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-        @click.self="showDeleteConfirm = false"
+      <transition
+        enter-active-class="transition-all duration-300 ease-out"
+        leave-active-class="transition-all duration-200 ease-in"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
       >
-        <div class="rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" style="background: var(--color-card);">
-          <h3 class="text-lg font-bold mb-2" style="color: var(--color-text); font-family: var(--font-heading);">确认删除</h3>
-          <p class="text-sm mb-6" style="color: var(--color-text-muted); font-family: var(--font-ui);">确定要删除这个食材吗？</p>
-          <div class="flex gap-3 justify-end">
-            <button
-              class="btn-soft"
-              @click="showDeleteConfirm = false"
-            >
-              取消
-            </button>
-            <button
-              class="btn-danger"
-              @click="doDelete"
-            >
-              确认删除
-            </button>
+        <div
+          v-if="showDeleteConfirm"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          @click.self="showDeleteConfirm = false"
+        >
+          <div class="modal-card">
+            <div class="modal-deco"></div>
+            <h3 class="modal-title">确认删除</h3>
+            <p class="modal-desc">确定要删除这个食材吗？</p>
+            <div class="flex gap-3 justify-end">
+              <button class="btn-soft" @click="showDeleteConfirm = false">取消</button>
+              <button class="btn-danger" @click="doDelete">确认删除</button>
+            </div>
           </div>
         </div>
-      </div>
+      </transition>
     </Teleport>
   </div>
 </template>
 
 <style scoped>
+/* ===== Editorial Header ===== */
+.admin-hero { padding: 0 0 2rem; }
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  margin-bottom: 1.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+.back-btn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+.admin-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  font-family: var(--font-ui);
+}
+.deco-line { width: 48px; height: 1px; background: var(--color-primary); }
+.admin-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+.admin-desc {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-family: var(--font-body);
+}
+
+/* ===== Section ===== */
+.manage-section { margin-bottom: 2rem; position: relative; z-index: 1; }
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-ui);
+}
+.elegant-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.elegant-divider::before,
+.elegant-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* ===== Search ===== */
+.search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-text-muted);
+}
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  transition: all 0.25s ease;
+  outline: none;
+}
+.search-input::placeholder { color: var(--color-text-muted); opacity: 0.6; }
+.search-input:focus {
+  box-shadow: 0 0 0 2px rgba(196, 93, 62, 0.15);
+  border-color: var(--color-primary);
+}
+
+/* ===== Category Pill ===== */
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  background: var(--color-secondary-light);
+  color: var(--color-secondary);
+}
+.pill-delete {
+  margin-left: 0.25rem;
+  width: 1rem;
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.4;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+.pill-delete:hover { opacity: 1; color: #b44a3e; }
+
+/* ===== Ingredient Row ===== */
+.ingredient-row {
+  padding: 0.875rem 1.25rem;
+  transition: background 0.15s;
+  border-color: var(--color-bg);
+}
+.ingredient-row:hover {
+  background: rgba(245, 240, 232, 0.5);
+}
+.ingredient-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+.ingredient-unit {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  font-family: var(--font-ui);
+}
+.ingredient-cat {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  color: var(--color-secondary);
+  background: var(--color-secondary-light);
+  font-family: var(--font-ui);
+}
+.ingredient-calorie {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.row-action-edit {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: opacity 0.2s;
+}
+.row-action-edit:hover { opacity: 0.7; }
+.row-action-delete {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: color 0.2s;
+}
+.row-action-delete:hover { color: #b44a3e; }
+
+/* ===== Edit Input ===== */
+.edit-input {
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  border: 1px solid var(--color-primary);
+  outline: none;
+  background: var(--color-card);
+  transition: box-shadow 0.2s;
+}
+.edit-input:focus {
+  box-shadow: 0 0 0 2px rgba(196, 93, 62, 0.15);
+}
+
+/* ===== Dropdown ===== */
+.dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(61, 51, 41, 0.12);
+  z-index: 50;
+  max-height: 9rem;
+  overflow-y: auto;
+  min-width: 100px;
+}
+.dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dropdown-item:hover { background: var(--color-bg); }
 .dropdown-selected {
   background: var(--color-primary-light);
   color: var(--color-primary);
+}
+.dropdown-empty {
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+}
+
+/* ===== Empty ===== */
+.empty-state-inline {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+/* ===== Modal ===== */
+.modal-card {
+  background: var(--color-card);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 25px 60px -12px rgba(61, 51, 41, 0.25);
+  max-width: 24rem;
+  width: 100%;
+  margin: 0 1rem;
+}
+.modal-deco { width: 40px; height: 2px; background: var(--color-primary); margin-bottom: 1.25rem; }
+.modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+.modal-desc {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* ===== Scroll Fade Animation ===== */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>

@@ -168,6 +168,22 @@ export async function apiSearch(q = '', tag = '', limit = 20) {
 
 // ============== Upload ==============
 
+export async function apiUploadGeneralImage(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const token = localStorage.getItem('recipe_admin_token')
+  const resp = await fetch(`${BASE}/upload/image`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: resp.statusText }))
+    throw new Error(err.detail || 'Upload failed')
+  }
+  return resp.json()
+}
+
 export async function apiUploadImage(recipeId, file) {
   const formData = new FormData()
   formData.append('file', file)

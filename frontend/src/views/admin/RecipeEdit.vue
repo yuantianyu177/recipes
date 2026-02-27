@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useRecipeStore } from '../../stores/recipe'
 import { apiUploadImage, apiReorderImages, apiCreateRecipe } from '../../api/index'
-import TipTapEditor from '../../components/TipTapEditor.vue'
+import MarkdownEditor from '../../components/MarkdownEditor.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,8 +105,24 @@ function removeSelectedTag(name) {
   form.value.tags = form.value.tags.filter((t) => t !== name)
 }
 
+function toggleTagDropdown(e) {
+  if (document.activeElement === e.target) {
+    tagDropdownOpen.value = !tagDropdownOpen.value
+  }
+}
+
 function closeTagDropdown() {
   setTimeout(() => { tagDropdownOpen.value = false }, 200)
+}
+
+function getTagColor(tagName) {
+  const tag = store.tags.find((t) => t.name === tagName)
+  return tag?.color || null
+}
+
+function getCategoryColor(categoryName) {
+  const cat = store.tagCategories.find((c) => c.name === categoryName)
+  return cat?.color || null
 }
 
 // ===========================================
@@ -119,6 +135,16 @@ function getIngredientFilteredList(idx) {
   const kw = (ingredientSearch.value[idx] || '').toLowerCase()
   if (!kw) return store.ingredients
   return store.ingredients.filter((i) => fuzzyMatch(i.name, kw))
+}
+
+function toggleIngredientDropdown(e, idx) {
+  if (document.activeElement === e.target) {
+    if (ingredientDropdownIdx.value === idx) {
+      ingredientDropdownIdx.value = -1
+    } else {
+      openIngredientDropdown(idx)
+    }
+  }
 }
 
 function openIngredientDropdown(idx) {
@@ -318,271 +344,262 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <button
-        class="btn-ghost btn-sm inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-colors mb-3"
-        style="font-family: var(--font-ui);"
-        @click="router.back()"
-      >
+  <div class="admin-recipe-edit max-w-3xl mx-auto">
+    <!-- Editorial Header -->
+    <section class="admin-hero">
+      <button class="back-btn" @click="router.back()">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
         返回
       </button>
-      <h1 class="section-heading text-2xl font-bold" style="color: var(--color-text);">
-        {{ isEdit ? '编辑菜谱' : '新建菜谱' }}
-      </h1>
-    </div>
+      <p class="admin-subtitle">{{ isEdit ? 'Edit Recipe' : 'New Recipe' }}</p>
+      <div class="deco-line mb-4"></div>
+      <h1 class="admin-title">{{ isEdit ? '编辑菜谱' : '新建菜谱' }}</h1>
+    </section>
 
     <!-- Form -->
-    <div class="space-y-6">
+    <div class="form-sections">
       <!-- Name -->
-      <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">
-          菜谱名称 <span class="text-red-400">*</span>
-        </label>
-        <input
-          v-model="form.name"
-          type="text"
-          placeholder="例如：西红柿炒鸡蛋"
-          class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
-        />
-      </div>
+      <section class="form-section">
+        <div class="section-label">
+          <span>基本信息</span>
+          <span class="w-8 h-px" style="background: var(--color-primary);"></span>
+        </div>
+        <div class="card-warm rounded-2xl p-6">
+          <label class="field-label">
+            菜谱名称 <span style="color: #b44a3e;">*</span>
+          </label>
+          <input
+            v-model="form.name"
+            type="text"
+            placeholder="例如：西红柿炒鸡蛋"
+            class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
+          />
+        </div>
+      </section>
 
       <!-- Cover Images -->
-      <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-3" style="color: var(--color-text); font-family: var(--font-ui);">
-          封面图片
-          <span v-if="uploadingImages.size > 0" class="ml-2 text-xs text-orange-500">(上传中...)</span>
-        </label>
-        <div class="flex flex-wrap gap-3 mb-3">
-          <div
-            v-for="(img, idx) in form.images"
-            :key="img._key || img.id || idx"
-            class="relative group w-28 h-28 rounded-xl overflow-hidden"
-            style="border: 1px solid var(--color-border);"
-          >
-            <img
-              :src="img.url"
-              class="w-full h-full object-cover"
-            />
-            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-              <button
-                v-if="idx > 0"
-                class="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-xs hover:bg-white"
-                style="color: var(--color-text);"
-                @click="moveImage(idx, -1)"
-              >←</button>
-              <button
-                class="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-xs text-white hover:bg-red-600"
-                @click="removeImage(idx)"
-              >✕</button>
-              <button
-                v-if="idx < form.images.length - 1"
-                class="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-xs hover:bg-white"
-                style="color: var(--color-text);"
-                @click="moveImage(idx, 1)"
-              >→</button>
-            </div>
-            <div class="absolute top-1 left-1 bg-black/50 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
-              {{ idx + 1 }}
-            </div>
-          </div>
-          <button
-            class="w-28 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors"
-            style="border-color: var(--color-border); color: var(--color-text-muted);"
-            @click="triggerFileSelect"
-          >
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
-            </svg>
-            <span class="text-xs" style="font-family: var(--font-ui);">添加图片</span>
-          </button>
+      <section class="form-section">
+        <div class="section-label">
+          <span>封面图片</span>
+          <span v-if="uploadingImages.size > 0" class="ml-2 text-xs" style="color: var(--color-accent);">(上传中...)</span>
         </div>
-        <p class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">支持 JPG、PNG、HEIC、AVIF 等格式，可上传多张。保存后将自动上传至服务器。</p>
-      </div>
+        <div class="card-warm rounded-2xl p-6">
+          <div class="flex flex-wrap gap-3 mb-3">
+            <div
+              v-for="(img, idx) in form.images"
+              :key="img._key || img.id || idx"
+              class="image-thumb group"
+            >
+              <img :src="img.url" class="w-full h-full object-cover" />
+              <div class="image-overlay">
+                <button v-if="idx > 0" class="img-action-btn" @click="moveImage(idx, -1)">←</button>
+                <button class="img-action-btn img-action-delete" @click="removeImage(idx)">✕</button>
+                <button v-if="idx < form.images.length - 1" class="img-action-btn" @click="moveImage(idx, 1)">→</button>
+              </div>
+              <div class="image-index">{{ idx + 1 }}</div>
+            </div>
+            <button class="image-add" @click="triggerFileSelect">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span class="text-xs" style="font-family: var(--font-ui);">添加图片</span>
+            </button>
+          </div>
+          <p class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">支持 JPG、PNG、HEIC、AVIF 等格式，可上传多张。</p>
+        </div>
+      </section>
 
       <!-- Description -->
-      <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">菜谱简介</label>
-        <TipTapEditor v-model="form.description" placeholder="写一段简介..." />
-      </div>
+      <section class="form-section">
+        <div class="section-label">
+          <span>菜谱简介</span>
+        </div>
+        <div class="card-warm rounded-2xl p-6">
+          <textarea
+            v-model="form.description"
+            placeholder="写一段简介..."
+            rows="3"
+            class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm resize-none"
+          />
+        </div>
+      </section>
 
       <!-- Steps -->
-      <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">烹饪步骤</label>
-        <TipTapEditor v-model="form.steps" placeholder="详细描述烹饪步骤..." />
-      </div>
+      <section class="form-section">
+        <div class="section-label">
+          <span>烹饪步骤</span>
+        </div>
+        <div class="card-warm rounded-2xl p-6">
+          <MarkdownEditor v-model="form.steps" placeholder="支持 Markdown 语法，可插入图片..." />
+        </div>
+      </section>
 
       <!-- Tips -->
-      <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-2" style="color: var(--color-text); font-family: var(--font-ui);">小贴士</label>
-        <textarea
-          v-model="form.tips"
-          placeholder="一些烹饪小技巧..."
-          rows="2"
-          class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm resize-none"
-        />
-      </div>
+      <section class="form-section">
+        <div class="section-label">
+          <span>小贴士</span>
+        </div>
+        <div class="card-warm rounded-2xl p-6">
+          <textarea
+            v-model="form.tips"
+            placeholder="一些烹饪小技巧..."
+            rows="2"
+            class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm resize-none"
+          />
+        </div>
+      </section>
 
-      <!-- Ingredients (no category selector - category is on the ingredient itself) -->
-      <div class="card-warm rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <label class="text-sm font-semibold" style="color: var(--color-text); font-family: var(--font-ui);">食材清单</label>
-          <span class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">
+      <!-- Ingredients -->
+      <section class="form-section">
+        <div class="section-label">
+          <span>食材清单</span>
+          <span class="ml-auto text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui); letter-spacing: 0;">
             估算总热量：<span class="font-semibold" style="color: var(--color-primary);">{{ totalCalories }} kcal</span>
           </span>
         </div>
+        <div class="card-warm rounded-2xl p-6">
+          <div class="space-y-3">
+            <div
+              v-for="(item, idx) in form.ingredients"
+              :key="idx"
+              class="ingredient-row"
+            >
+              <!-- Name with searchable dropdown -->
+              <div class="relative flex-1 min-w-[140px]">
+                <input
+                  v-model="ingredientSearch[idx]"
+                  type="text"
+                  placeholder="搜索食材..."
+                  class="input-warm w-full px-3 py-2 rounded-lg outline-none text-sm"
+                  @focus="openIngredientDropdown(idx)"
+                  @mousedown="toggleIngredientDropdown($event, idx)"
+                  @blur="closeIngredientDropdown"
+                  @input="onIngredientSearchInput(idx)"
+                />
+                <svg
+                  class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+                  style="color: var(--color-text-muted);"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                <div
+                  v-if="ingredientDropdownIdx === idx"
+                  class="dropdown-panel"
+                >
+                  <button
+                    v-for="ing in getIngredientFilteredList(idx)"
+                    :key="ing.id"
+                    class="dropdown-item"
+                    :class="{ 'dropdown-selected': ing.name === item.name }"
+                    @mousedown.prevent="selectIngredient(idx, ing)"
+                  >
+                    {{ ing.name }}
+                    <span class="text-xs ml-1" style="color: var(--color-text-muted);">({{ ing.unit }}<template v-if="ing.category"> · {{ ing.category }}</template>)</span>
+                  </button>
+                  <div v-if="getIngredientFilteredList(idx).length === 0" class="dropdown-empty">
+                    无匹配食材
+                  </div>
+                </div>
+              </div>
 
-        <div class="space-y-3">
-          <div
-            v-for="(item, idx) in form.ingredients"
-            :key="idx"
-            class="flex gap-2 items-center flex-wrap rounded-xl p-2 sm:p-3"
-            style="background: var(--color-bg);"
-          >
-            <!-- Name with searchable dropdown -->
-            <div class="relative flex-1 min-w-[140px]">
+              <!-- Amount -->
               <input
-                v-model="ingredientSearch[idx]"
+                v-model="item.amount"
                 type="text"
-                placeholder="搜索食材..."
-                class="input-warm w-full px-3 py-2 rounded-lg outline-none text-sm"
-                @focus="openIngredientDropdown(idx)"
-                @blur="closeIngredientDropdown"
-                @input="onIngredientSearchInput(idx)"
+                placeholder="用量"
+                class="input-warm w-20 px-3 py-2 rounded-lg outline-none text-sm"
               />
-              <svg
-                class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
-                style="color: var(--color-text-muted);"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-              <div
-                v-if="ingredientDropdownIdx === idx"
-                class="card-warm absolute top-full left-0 right-0 mt-1 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto"
-              >
-                <button
-                  v-for="ing in getIngredientFilteredList(idx)"
-                  :key="ing.id"
-                  class="block w-full text-left px-3 py-2 text-sm transition-colors"
-                  :class="{ 'bg-orange-50 text-orange-600': ing.name === item.name }"
-                  style="color: var(--color-text); font-family: var(--font-ui);"
-                  @mousedown.prevent="selectIngredient(idx, ing)"
-                >
-                  {{ ing.name }}
-                  <span class="text-xs ml-1" style="color: var(--color-text-muted);">({{ ing.unit }}<template v-if="ing.category"> · {{ ing.category }}</template>)</span>
-                </button>
-                <div v-if="getIngredientFilteredList(idx).length === 0" class="px-3 py-3 text-center text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">
-                  无匹配食材
-                </div>
-              </div>
+
+              <!-- Unit -->
+              <span class="text-xs w-12 text-center" style="color: var(--color-text-muted); font-family: var(--font-ui);">{{ item.unit || '单位' }}</span>
+
+              <!-- Remove -->
+              <button class="remove-ingredient" @click="removeIngredient(idx)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-
-            <!-- Amount -->
-            <input
-              v-model="item.amount"
-              type="text"
-              placeholder="用量"
-              class="input-warm w-20 px-3 py-2 rounded-lg outline-none text-sm"
-            />
-
-            <!-- Unit (auto from ingredient) -->
-            <span class="text-xs w-12 text-center" style="color: var(--color-text-muted); font-family: var(--font-ui);">{{ item.unit || '单位' }}</span>
-
-            <!-- Remove -->
-            <button
-              class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-              style="color: var(--color-text-muted);"
-              @click="removeIngredient(idx)"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
           </div>
+
+          <button class="add-ingredient-btn" @click="addIngredient">
+            + 添加食材
+          </button>
         </div>
+      </section>
 
-        <button
-          class="mt-3 w-full py-2.5 rounded-xl border-2 border-dashed text-sm transition-colors"
-          style="border-color: var(--color-border); color: var(--color-text-muted); font-family: var(--font-ui);"
-          @click="addIngredient"
-        >
-          + 添加食材
-        </button>
-      </div>
-
-      <!-- Tags (searchable dropdown with overflow fix) -->
-      <div class="card-warm rounded-2xl p-6">
-        <label class="block text-sm font-semibold mb-3" style="color: var(--color-text); font-family: var(--font-ui);">标签</label>
-
-        <!-- Selected tags -->
-        <div class="flex flex-wrap gap-2 mb-3 min-h-[2.5rem] items-center">
-          <template v-if="form.tags.length">
-            <span
-              v-for="tag in form.tags"
-              :key="tag"
-              class="tag-primary inline-flex items-center justify-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium leading-none"
-              style="font-family: var(--font-ui);"
-            >
-              <span>{{ tag }}</span>
-              <button class="hover:text-red-500 ml-0.5 flex-shrink-0" @click="removeSelectedTag(tag)">×</button>
-            </span>
-          </template>
-          <span v-else class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">尚未选择标签</span>
+      <!-- Tags -->
+      <section class="form-section">
+        <div class="section-label">
+          <span>标签</span>
         </div>
-
-        <!-- Dropdown trigger -->
-        <div class="relative">
-          <input
-            v-model="tagSearch"
-            type="text"
-            placeholder="点击选择标签，或输入搜索..."
-            class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
-            @focus="tagDropdownOpen = true"
-            @blur="closeTagDropdown"
-          />
-          <svg
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-transform"
-            :class="{ 'rotate-180': tagDropdownOpen }"
-            style="color: var(--color-text-muted);"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-
-          <!-- Dropdown panel - use fixed max-height and ensure it doesn't overflow viewport -->
-          <div
-            v-if="tagDropdownOpen"
-            class="card-warm absolute left-0 right-0 mt-1 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto"
-            :class="{ 'bottom-full mb-1': false }"
-            style="max-height: min(14rem, 50vh);"
-          >
-            <template v-if="Object.keys(filteredTagsByCategory).length > 0">
-              <div v-for="(catTags, category) in filteredTagsByCategory" :key="category">
-                <div class="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider sticky top-0 z-10" style="color: var(--color-text-muted); background: var(--color-bg); font-family: var(--font-ui);">
-                  {{ category }}
-                </div>
-                <button
-                  v-for="tag in catTags"
-                  :key="tag.id"
-                  class="block w-full text-left px-4 py-2 text-sm transition-colors"
-                  style="color: var(--color-text); font-family: var(--font-ui);"
-                  @mousedown.prevent="selectTag(tag.name)"
-                >
-                  {{ tag.name }}
-                </button>
-              </div>
+        <div class="card-warm rounded-2xl p-6">
+          <!-- Selected tags -->
+          <div class="flex flex-wrap gap-2 mb-3 min-h-[2.5rem] items-center">
+            <template v-if="form.tags.length">
+              <span
+                v-for="tag in form.tags"
+                :key="tag"
+                class="selected-tag"
+                :style="getTagColor(tag) ? { background: getTagColor(tag) + '1a', color: getTagColor(tag) } : {}"
+              >
+                <span>{{ tag }}</span>
+                <button class="tag-remove" @click="removeSelectedTag(tag)">×</button>
+              </span>
             </template>
-            <div v-else class="px-4 py-6 text-center text-sm" style="color: var(--color-text-muted); font-family: var(--font-ui);">
-              没有更多可选标签
+            <span v-else class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-ui);">尚未选择标签</span>
+          </div>
+
+          <!-- Dropdown trigger -->
+          <div class="relative">
+            <input
+              v-model="tagSearch"
+              type="text"
+              placeholder="点击选择标签，或输入搜索..."
+              class="input-warm w-full px-4 py-2.5 rounded-xl outline-none transition-all text-sm"
+              @focus="tagDropdownOpen = true"
+              @mousedown="toggleTagDropdown"
+              @blur="closeTagDropdown"
+            />
+            <svg
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-transform"
+              :class="{ 'rotate-180': tagDropdownOpen }"
+              style="color: var(--color-text-muted);"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+
+            <div
+              v-if="tagDropdownOpen"
+              class="dropdown-panel tag-dropdown"
+            >
+              <template v-if="Object.keys(filteredTagsByCategory).length > 0">
+                <div v-for="(catTags, category) in filteredTagsByCategory" :key="category">
+                  <div class="dropdown-category-header" :style="getCategoryColor(category) ? { color: getCategoryColor(category) } : {}">
+                    {{ category }}
+                  </div>
+                  <button
+                    v-for="tag in catTags"
+                    :key="tag.id"
+                    class="dropdown-item"
+                    :style="tag.color ? { color: tag.color } : {}"
+                    @mousedown.prevent="selectTag(tag.name)"
+                  >
+                    {{ tag.name }}
+                  </button>
+                </div>
+              </template>
+              <div v-else class="dropdown-empty py-6">
+                没有更多可选标签
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- Submit -->
       <div class="flex gap-3 pt-2 pb-12">
@@ -605,3 +622,278 @@ async function handleSubmit() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* ===== Editorial Header ===== */
+.admin-hero { padding: 0 0 1.5rem; }
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  margin-bottom: 1.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+.back-btn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+.admin-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  font-family: var(--font-ui);
+}
+.deco-line { width: 48px; height: 1px; background: var(--color-primary); }
+.admin-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+/* ===== Form Sections ===== */
+.form-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.form-section {}
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-ui);
+}
+.field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  margin-bottom: 0.5rem;
+}
+
+/* ===== Image Thumbnails ===== */
+.image-thumb {
+  position: relative;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  transition: opacity 0.2s ease;
+}
+.image-thumb:hover .image-overlay { opacity: 1; }
+.img-action-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.img-action-btn:hover { background: #fff; }
+.img-action-delete {
+  background: #b44a3e;
+  color: #fff;
+}
+.img-action-delete:hover { background: #9a3e33; }
+.image-index {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 0.625rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-add {
+  width: 7rem;
+  height: 7rem;
+  border-radius: 0.75rem;
+  border: 2px dashed var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.image-add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ===== Ingredient Row ===== */
+.ingredient-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--color-bg);
+  transition: background 0.15s;
+}
+.remove-ingredient {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.remove-ingredient:hover {
+  color: #b44a3e;
+  background: #fdf2f0;
+}
+.add-ingredient-btn {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+  border: 2px dashed var(--color-border);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.add-ingredient-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ===== Selected Tag ===== */
+.selected-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  line-height: 1;
+}
+.tag-remove {
+  margin-left: 0.125rem;
+  flex-shrink: 0;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+.tag-remove:hover { color: #b44a3e; }
+
+/* ===== Dropdown ===== */
+.dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(61, 51, 41, 0.12);
+  z-index: 20;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+.tag-dropdown {
+  z-index: 30;
+  max-height: min(14rem, 50vh);
+}
+.dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dropdown-item:hover { background: var(--color-bg); }
+.dropdown-selected {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+.dropdown-category-header {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  font-family: var(--font-ui);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.dropdown-empty {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+}
+</style>
