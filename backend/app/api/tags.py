@@ -10,18 +10,50 @@ from app.schemas.tag import TagCreate, TagUpdate, TagOut, TagCategoryCreate, Tag
 
 router = APIRouter(prefix="/api/tags", tags=["tags"])
 
+# Color palette for auto-assignment
+CATEGORY_COLORS = [
+    "#c45d3e",  # warm red
+    "#5b7a5e",  # sage green
+    "#b8860b",  # goldenrod
+    "#6b5b95",  # purple
+    "#2e86ab",  # blue
+    "#d4726a",  # coral
+    "#3d7068",  # teal
+    "#a0522d",  # sienna
+    "#708090",  # slate
+    "#8b6914",  # khaki
+    "#c44569",  # rose
+    "#3c6382",  # steel blue
+]
+
+
+async def _pick_color(db: AsyncSession) -> str:
+    """Pick next color from palette based on existing category count."""
+    count = await db.scalar(select(func.count()).select_from(TagCategory))
+    return CATEGORY_COLORS[(count or 0) % len(CATEGORY_COLORS)]
+
 
 # ============== Tag Categories ==============
 
 @router.get("/categories", response_model=list[TagCategoryOut])
 async def list_tag_categories(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(TagCategory).order_by(TagCategory.id))
-    return result.scalars().all()
+    cats = result.scalars().all()
+    # Auto-assign colors to categories that don't have one
+    changed = False
+    for idx, cat in enumerate(cats):
+        if not cat.color:
+            cat.color = CATEGORY_COLORS[idx % len(CATEGORY_COLORS)]
+            changed = True
+    if changed:
+        await db.commit()
+    return cats
 
 
 @router.post("/categories", response_model=TagCategoryOut, status_code=status.HTTP_201_CREATED)
 async def create_tag_category(data: TagCategoryCreate, db: AsyncSession = Depends(get_db), _=Depends(verify_token)):
-    cat = TagCategory(name=data.name)
+    color = await _pick_color(db)
+    cat = TagCategory(name=data.name, color=color)
     db.add(cat)
     await db.commit()
     await db.refresh(cat)
@@ -55,6 +87,7 @@ async def list_tags(db: AsyncSession = Depends(get_db)):
             name=t.name,
             category_id=t.category_id,
             category=t.category_rel.name if t.category_rel else "",
+            color=t.category_rel.color if t.category_rel else None,
         )
         for t in tags
     ]
@@ -76,6 +109,7 @@ async def create_tag(data: TagCreate, db: AsyncSession = Depends(get_db), _=Depe
         name=tag.name,
         category_id=tag.category_id,
         category=tag.category_rel.name if tag.category_rel else "",
+        color=tag.category_rel.color if tag.category_rel else None,
     )
 
 
@@ -99,6 +133,7 @@ async def update_tag(tag_id: int, data: TagUpdate, db: AsyncSession = Depends(ge
         name=tag.name,
         category_id=tag.category_id,
         category=tag.category_rel.name if tag.category_rel else "",
+        color=tag.category_rel.color if tag.category_rel else None,
     )
 
 

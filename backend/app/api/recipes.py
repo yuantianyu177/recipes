@@ -77,15 +77,17 @@ async def _build_recipe_list_out(recipe) -> dict:
         "updated_at": _format_datetime(recipe.updated_at),
         "images": recipe.images,
         "tags": [_build_tag_brief(t) for t in recipe.tags],
+        "ingredients": [_build_ingredient_out(ri) for ri in recipe.recipe_ingredients],
     }
 
 
 def _build_tag_brief(tag) -> dict:
-    """Build tag brief dict, resolving category name from relationship."""
+    """Build tag brief dict, resolving category name and color from relationship."""
     return {
         "id": tag.id,
         "name": tag.name,
         "category": tag.category_rel.name if tag.category_rel else "",
+        "color": tag.category_rel.color if tag.category_rel else None,
     }
 
 
@@ -104,8 +106,7 @@ async def list_recipes(db: AsyncSession = Depends(get_db)):
         .options(
             selectinload(Recipe.images),
             selectinload(Recipe.tags).selectinload(Tag.category_rel),
-            selectinload(Recipe.recipe_ingredients)
-            .selectinload(RecipeIngredient.ingredient),
+            _ingredient_load,
         )
         .order_by(Recipe.id.desc())
     )

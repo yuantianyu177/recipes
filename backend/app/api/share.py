@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.models.models import Recipe, RecipeIngredient
+from app.models.models import Recipe
 
 router = APIRouter(prefix="/api/share", tags=["share"])
 

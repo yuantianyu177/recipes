@@ -13,6 +13,28 @@ from app.schemas.ingredient import (
 
 router = APIRouter(prefix="/api/ingredients", tags=["ingredients"])
 
+# Color palette for auto-assignment
+INGREDIENT_CATEGORY_COLORS = [
+    "#2e86ab",  # blue
+    "#a0522d",  # sienna
+    "#5b7a5e",  # sage green
+    "#6b5b95",  # purple
+    "#d4726a",  # coral
+    "#b8860b",  # goldenrod
+    "#3d7068",  # teal
+    "#c45d3e",  # warm red
+    "#708090",  # slate
+    "#8b6914",  # khaki
+    "#c44569",  # rose
+    "#3c6382",  # steel blue
+]
+
+
+async def _pick_ingredient_color(db: AsyncSession) -> str:
+    """Pick next color from palette based on existing category count."""
+    count = await db.scalar(select(func.count()).select_from(IngredientCategory))
+    return INGREDIENT_CATEGORY_COLORS[(count or 0) % len(INGREDIENT_CATEGORY_COLORS)]
+
 
 def _build_ingredient_out(ing: Ingredient) -> dict:
     """Build ingredient output with resolved category name."""
@@ -31,7 +53,16 @@ def _build_ingredient_out(ing: Ingredient) -> dict:
 @router.get("/categories", response_model=list[IngredientCategoryOut])
 async def list_ingredient_categories(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(IngredientCategory).order_by(IngredientCategory.id))
-    return result.scalars().all()
+    cats = result.scalars().all()
+    # Auto-assign colors to categories that don't have one
+    changed = False
+    for idx, cat in enumerate(cats):
+        if not cat.color:
+            cat.color = INGREDIENT_CATEGORY_COLORS[idx % len(INGREDIENT_CATEGORY_COLORS)]
+            changed = True
+    if changed:
+        await db.commit()
+    return cats
 
 
 @router.post("/categories", response_model=IngredientCategoryOut, status_code=status.HTTP_201_CREATED)
@@ -40,7 +71,8 @@ async def create_ingredient_category(
     db: AsyncSession = Depends(get_db),
     _=Depends(verify_token),
 ):
-    cat = IngredientCategory(name=data.name)
+    color = await _pick_ingredient_color(db)
+    cat = IngredientCategory(name=data.name, color=color)
     db.add(cat)
     await db.commit()
     await db.refresh(cat)
