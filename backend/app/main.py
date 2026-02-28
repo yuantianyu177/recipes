@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -5,6 +6,10 @@ import os
 
 from app.api import auth, recipes, tags, ingredients, search, upload, import_export, share
 from app.core.config import settings
+from app.core.database import engine, Base
+
+# Ensure all models are imported so Base.metadata is complete
+import app.models.models  # noqa: F401
 
 # Register HEIF/HEIC support
 try:
@@ -13,7 +18,16 @@ try:
 except ImportError:
     pass
 
-app = FastAPI(title="Recipe API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables if they don't exist
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
+app = FastAPI(title="Recipe API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
