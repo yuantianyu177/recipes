@@ -92,7 +92,7 @@ function handleLogout() {
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 max-w-7xl mx-auto w-full px-6 pt-24 pb-8 relative z-0">
+    <main class="flex-1 max-w-7xl mx-auto w-full px-6 pt-24 pb-8">
       <router-view />
     </main>
 
@@ -119,9 +119,6 @@ function handleLogout() {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--color-border);
-  isolation: isolate;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
 
 .brand-text {
