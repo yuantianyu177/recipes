@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -9,13 +9,61 @@ const emit = defineEmits(['share'])
 
 const calories = computed(() => props.recipe.calories || 0)
 
-const coverImage = computed(() => {
+const allImages = computed(() => {
   if (props.recipe.images && props.recipe.images.length > 0) {
-    const img = props.recipe.images[0]
-    return typeof img === 'string' ? img : img.image_path
+    return props.recipe.images.map((img) =>
+      typeof img === 'string' ? img : img.image_path
+    )
   }
-  return 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&h=600&fit=crop'
+  return ['https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&h=600&fit=crop']
 })
+
+const hasMultipleImages = computed(() => allImages.value.length > 1)
+const currentIndex = ref(0)
+let autoplayTimer = null
+
+function startAutoplay() {
+  if (!hasMultipleImages.value) return
+  stopAutoplay()
+  autoplayTimer = setInterval(() => {
+    currentIndex.value = (currentIndex.value + 1) % allImages.value.length
+  }, 3000)
+}
+
+function stopAutoplay() {
+  if (autoplayTimer) {
+    clearInterval(autoplayTimer)
+    autoplayTimer = null
+  }
+}
+
+function goTo(index, e) {
+  if (e) { e.preventDefault(); e.stopPropagation() }
+  currentIndex.value = index
+  startAutoplay()
+}
+
+// Touch swipe support
+let touchStartX = 0
+function onTouchStart(e) {
+  touchStartX = e.touches[0].clientX
+  stopAutoplay()
+}
+function onTouchEnd(e) {
+  const diff = touchStartX - e.changedTouches[0].clientX
+  if (Math.abs(diff) > 40) {
+    const len = allImages.value.length
+    currentIndex.value = diff > 0
+      ? (currentIndex.value + 1) % len
+      : (currentIndex.value - 1 + len) % len
+  }
+  startAutoplay()
+}
+
+onMounted(() => startAutoplay())
+onBeforeUnmount(() => stopAutoplay())
+
+const coverImage = computed(() => allImages.value[0])
 
 const ingredientNames = computed(() => {
   if (!props.recipe.ingredients) return []
@@ -46,21 +94,36 @@ function handleShare(e) {
 <template>
   <router-link :to="`/recipe/${recipe.id}`" class="no-underline block">
     <div class="recipe-card">
-      <!-- Cover Image -->
-      <div class="relative overflow-hidden">
-        <img
-          :src="coverImage"
-          :alt="recipe.name"
-          class="card-image"
-        />
+      <!-- Cover Image Carousel -->
+      <div
+        class="relative overflow-hidden"
+        @touchstart.passive="hasMultipleImages && onTouchStart($event)"
+        @touchend.passive="hasMultipleImages && onTouchEnd($event)"
+      >
+        <div
+          class="carousel-track"
+          :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
+        >
+          <img
+            v-for="(img, idx) in allImages"
+            :key="idx"
+            :src="img"
+            :alt="recipe.name"
+            class="card-image"
+          />
+        </div>
         <div v-if="calories > 0" class="calorie-badge">
           {{ calories }} kcal
         </div>
-        <div
-          v-if="recipe.images && recipe.images.length > 1"
-          class="image-count-badge"
-        >
-          {{ recipe.images.length }} 张
+        <!-- Dot indicators -->
+        <div v-if="hasMultipleImages" class="carousel-dots">
+          <button
+            v-for="(_, idx) in allImages"
+            :key="idx"
+            class="carousel-dot"
+            :class="{ active: idx === currentIndex }"
+            @click="goTo(idx, $event)"
+          />
         </div>
       </div>
 
@@ -129,11 +192,42 @@ function handleShare(e) {
 
 .card-image {
   width: 100%;
+  min-width: 100%;
   object-fit: cover;
   transition: transform 0.6s cubic-bezier(.22,.61,.36,1);
 }
 .recipe-card:hover .card-image {
   transform: scale(1.06);
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.45s cubic-bezier(.4, 0, .2, 1);
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 0.625rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.375rem;
+  z-index: 2;
+}
+.carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.25s ease;
+}
+.carousel-dot.active {
+  background: #fff;
+  width: 16px;
+  border-radius: 3px;
 }
 
 .calorie-badge {
@@ -148,19 +242,6 @@ function handleShare(e) {
   border-radius: 999px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  font-family: var(--font-ui);
-}
-
-.image-count-badge {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(61, 51, 41, 0.55);
-  color: white;
-  backdrop-filter: blur(4px);
   font-family: var(--font-ui);
 }
 
