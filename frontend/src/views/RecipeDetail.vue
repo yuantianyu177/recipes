@@ -46,6 +46,25 @@ function nextSlide() {
   goToSlide((currentSlide.value + 1) % imageCount.value)
 }
 
+// --- Touch swipe support ---
+let touchStartX = 0
+let touchStartY = 0
+
+function onTouchStart(e) {
+  touchStartX = e.touches[0].clientX
+  touchStartY = e.touches[0].clientY
+}
+
+function onTouchEnd(e) {
+  const dx = e.changedTouches[0].clientX - touchStartX
+  const dy = e.changedTouches[0].clientY - touchStartY
+  // Only trigger if horizontal swipe is dominant and long enough
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (dx < 0) nextSlide()
+    else prevSlide()
+  }
+}
+
 onMounted(async () => {
   loadingDetail.value = true
   recipe.value = await store.fetchRecipeById(route.params.id)
@@ -106,7 +125,7 @@ function handleShare() {
       v-if="imageList.length > 0"
       class="hero-carousel group animate-fade-in-up"
     >
-      <div class="hero-carousel-inner">
+      <div class="hero-carousel-inner" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
         <transition name="fade" mode="out-in">
           <img
             :key="currentSlide"
@@ -405,7 +424,7 @@ function handleShare() {
   transform: translateY(-50%) scale(1.1);
 }
 
-/* Carousel controls */
+/* Carousel controls — hidden by default, visible on hover (PC only) */
 .hero-carousel-controls {
   position: absolute;
   bottom: 1.25rem;
@@ -420,7 +439,10 @@ function handleShare() {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(229, 221, 209, 0.4);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
+.group:hover .hero-carousel-controls { opacity: 1; }
 .image-counter {
   font-size: 0.75rem;
   font-weight: 600;
@@ -873,14 +895,10 @@ function handleShare() {
     padding: 2rem 1.5rem;
   }
   .carousel-arrow {
-    width: 2rem;
-    height: 2rem;
+    display: none;
   }
-  .carousel-arrow-left { left: 0.75rem; }
-  .carousel-arrow-right { right: 0.75rem; }
   .hero-carousel-controls {
-    padding: 0.375rem 0.75rem;
-    gap: 0.75rem;
+    display: none;
   }
 }
 

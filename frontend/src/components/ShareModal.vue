@@ -47,6 +47,23 @@ async function prefetchCoverAsBase64(url) {
   }
 }
 
+// Replace image src URLs in HTML string with base64 data URLs
+async function inlineHtmlImages(html) {
+  if (!html) return html
+  const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*>/gi
+  const matches = [...html.matchAll(imgRegex)]
+  let result = html
+  for (const match of matches) {
+    const url = match[1]
+    if (url.startsWith('data:')) continue
+    const dataUrl = await prefetchCoverAsBase64(url)
+    if (dataUrl && dataUrl !== url) {
+      result = result.replace(url, dataUrl)
+    }
+  }
+  return result
+}
+
 // Group ingredients by category
 function getIngredientGroups(recipe) {
   if (!recipe.ingredients || !recipe.ingredients.length) return {}
@@ -69,6 +86,7 @@ watch(() => props.show, async (val) => {
     generating.value = true
     fullRecipe.value = null
     coverDataUrl.value = ''
+    stepsHtml.value = ''
 
     // 1. Fetch recipe data
     const hasFullData = props.recipe.ingredients?.length >= 0 && props.recipe.steps !== undefined
@@ -88,7 +106,10 @@ watch(() => props.show, async (val) => {
     fullRecipe.value = recipeData
     coverDataUrl.value = await prefetchCoverAsBase64(coverUrl)
 
-    // 3. DOM render — wait for all images in cardRef to decode
+    // 3. Inline step images as base64
+    stepsHtml.value = await inlineHtmlImages(stepsHtmlRaw.value)
+
+    // DOM render — wait for all images in cardRef to decode
     await nextTick()
 
     // Wait for all images in the render card to be fully decoded
@@ -106,13 +127,18 @@ watch(() => props.show, async (val) => {
       )
     }
 
-    // 4. toPng
+    // 4. toPng — warm-up call to force resource loading on mobile,
+    //    then a real call to produce the final image
+    const toPngOptions = {
+      pixelRatio: 2,
+      backgroundColor: '#fffdf8',
+      skipFonts: true,
+    }
     try {
-      const dataUrl = await toPng(cardRef.value, {
-        pixelRatio: 2,
-        backgroundColor: '#fffdf8',
-        skipFonts: true,
-      })
+      // Warm-up: forces html-to-image to fetch & cache all resources
+      await toPng(cardRef.value, toPngOptions).catch(() => {})
+      // Real render
+      const dataUrl = await toPng(cardRef.value, toPngOptions)
       imageUrl.value = dataUrl
     } catch (err) {
       imageUrl.value = ''
@@ -130,54 +156,25 @@ async function downloadImage() {
   const resp = await fetch(imageUrl.value)
   const blob = await resp.blob()
 
-  // 检测是否移动设备
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-  const isWeChat = /MicroMessenger/i.test(navigator.userAgent)
 
-  // iOS 微信内置浏览器特殊处理：引导用户长按保存
-  if (isWeChat && isIOS) {
-    alert('请长按图片，选择「保存图片」到相册')
-    return
-  }
-
-  // 尝试使用 Web Share API（支持 iOS Safari、Android Chrome 等）
-  const file = new File([blob], fileName, { type: 'image/png' })
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: props.recipe?.name || '菜谱分享',
-        text: '来自我的菜谱'
-      })
-      return
-    } catch (err) {
-      // 用户取消或分享失败，继续尝试其他方式
-      if (err.name === 'AbortError') {
-        return // 用户主动取消
+  if (isMobile) {
+    // Mobile: use Web Share API to trigger system share sheet (save to photos)
+    const file = new File([blob], fileName, { type: 'image/png' })
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] })
+        return
+      } catch (err) {
+        if (err.name === 'AbortError') return
       }
     }
+    // Fallback: direct download
+    triggerDownload(blob, fileName)
+  } else {
+    // Desktop: standard download
+    triggerDownload(blob, fileName)
   }
-
-  // iOS Safari：使用新窗口打开图片，让用户长按保存
-  if (isIOS) {
-    const url = URL.createObjectURL(blob)
-    const newWindow = window.open(url, '_blank')
-    if (newWindow) {
-      // 提示用户长按保存
-      setTimeout(() => {
-        alert('请长按图片，选择「存储图像」保存到相册')
-      }, 500)
-    } else {
-      // 弹窗被拦截，使用下载方式
-      triggerDownload(blob, fileName)
-    }
-    URL.revokeObjectURL(url)
-    return
-  }
-
-  // Android 及其他：尝试使用下载方式
-  triggerDownload(blob, fileName)
 }
 
 function triggerDownload(blob, fileName) {
@@ -214,6 +211,7 @@ function close() {
   imageUrl.value = ''
   fullRecipe.value = null
   coverDataUrl.value = ''
+  stepsHtml.value = ''
   emit('close')
 }
 
@@ -224,7 +222,8 @@ const sortedCategories = computed(() => {
   const keys = Object.keys(ingredientGroups.value)
   return categoryOrder.filter((c) => keys.includes(c)).concat(keys.filter((c) => !categoryOrder.includes(c)))
 })
-const stepsHtml = computed(() => r.value?.steps ? marked(r.value.steps, { breaks: true }) : '')
+const stepsHtmlRaw = computed(() => r.value?.steps ? marked(r.value.steps, { breaks: true }) : '')
+const stepsHtml = ref('')
 const descText = computed(() => r.value?.description || '')
 </script>
 

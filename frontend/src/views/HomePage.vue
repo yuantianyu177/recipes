@@ -326,7 +326,6 @@ function scrollToTop() {
               <div v-if="featuredRecipe.calories" class="calorie-badge-featured">
                 {{ featuredRecipe.calories }} kcal
               </div>
-              <div class="featured-badge">编辑推荐</div>
             </div>
             <div class="featured-content">
               <div class="featured-label">

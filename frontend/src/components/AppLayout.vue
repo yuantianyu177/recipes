@@ -115,7 +115,7 @@ function handleLogout() {
 
 <style scoped>
 .header-blur {
-  background: rgba(245, 240, 232, 0.85);
+  background: rgb(245, 240, 232);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--color-border);
